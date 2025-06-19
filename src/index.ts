@@ -679,7 +679,7 @@ When users request a dashboard:
 5. Ensure all code is production-ready with proper error handling
 6. DO NOT include any filters in the initial dashboard - keep it simple and focused on data visualization
 7. Use static data from BigQuery queries - dashboards will show a snapshot of current data
-8. Provide the complete HTML file as a single code block for user review
+8. Provide the complete HTML file as a single code block for user review. Use static data for initial review, but ensure the final version fetches dynamic data from BigQuery using FastAPI endpoints. If the user tells you there is a "fetch" error, explain that this is because Claude does not support dynamic data fetching in the preview, but the final dashboard will work correctly when uploaded to the MLC-direct Dashboard Hub.
 9. Ask the user: "Would you like me to upload this dashboard to the MLC-direct Dashboard Hub?"
 10. If yes, ALWAYS ask: "What would you like to name this dashboard?" and wait for the user's response
     - Suggest a descriptive name based on the dashboard content (e.g., "vendor-buybox-analysis" or "sales-performance")
