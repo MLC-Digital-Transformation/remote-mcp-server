@@ -51,7 +51,7 @@ export class MyMCP extends McpAgent {
 		console.log(`MCP Server initialized with role: ${this.role}`);
 
 		// Test role tool - prints the current role
-		this.server.tool("get_role", "Get the current MCP server role configuration", {}, async () => {
+		this.server.tool("get_role", "Get the current User Role. This is currently NOT used anywhere, so dont use it.", {}, async () => {
 			console.log(`Current role accessed: ${this.role}`);
 			return {
 				content: [{ type: "text", text: `Current MCP Server Role: ${this.role}` }],
