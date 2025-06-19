@@ -167,6 +167,49 @@ export class MyMCP extends McpAgent {
 			}
 		});
 
+		// List existing dashboards
+		this.server.tool("list_dashboards", "List all existing dashboard names from Google Cloud Storage", {
+			directory: z.string().optional().default("dashboards/user_uploads").describe("Directory in the bucket to list dashboards from")
+		}, async ({ directory }) => {
+			try {
+				const endpoint = `/storage/list-dashboards`;
+				const params = new URLSearchParams();
+				
+				if (directory && directory !== "dashboards/user_uploads") {
+					params.append("directory", directory);
+				}
+				
+				const fullEndpoint = params.toString() ? `${endpoint}?${params.toString()}` : endpoint;
+				
+				const result = await this.callFastAPI(fullEndpoint);
+				
+				// Format the response nicely
+				if (Array.isArray(result) && result.length > 0) {
+					const dashboardList = result.map((name, index) => `${index + 1}. ${name}`).join('\n');
+					return {
+						content: [{
+							type: "text",
+							text: `Available dashboards:\n\n${dashboardList}\n\nTotal: ${result.length} dashboard(s)`
+						}],
+					};
+				} else {
+					return {
+						content: [{
+							type: "text",
+							text: "No dashboards found in the specified directory."
+						}],
+					};
+				}
+			} catch (error) {
+				return {
+					content: [{
+						type: "text",
+						text: `Failed to list dashboards: ${error instanceof Error ? error.message : String(error)}`
+					}],
+				};
+			}
+		});
+
 		// BI Analyst & Dashboard Builder prompt
 		this.server.prompt("BI Analyst & Dashboard Builder", "Data analysis assistant for BigQuery queries and dashboard creation", {
 		}, async ({}) => {
@@ -578,6 +621,7 @@ Your role is to help users understand and analyze their data effectively using t
 - Access the bigquery_catalog resource to see available datasets and tables (if not already provided above)
 - Create interactive HTML dashboards with charts and visualizations using the Chart.js patterns provided above
 - Use upload_dashboard() to upload finished dashboards to Google Cloud Storage and get a public URL
+- Use list_dashboards() to see what dashboards already exist (helps avoid duplicate names)
 - IMPORTANT: The examples show Bar, Line, and Doughnut charts, but you should use ANY Chart.js chart type (Scatter, Bubble, Radar, Polar Area, Area, etc.) that best visualizes the data
 
 **Required Workflow:**
@@ -596,14 +640,15 @@ When users request a dashboard:
 6. DO NOT include any filters in the initial dashboard - keep it simple and focused on data visualization
 7. Use static data from BigQuery queries - dashboards will show a snapshot of current data
 8. Provide the complete HTML file as a single code block for user review
-9. Ask the user: "Would you like me to upload this dashboard to the MLC-direct Dashboard Hub?"
-10. If yes, use the upload_dashboard() tool to upload the HTML and provide the public URL. Replace static data with dynamic data fetching from BigQuery using FastAPI endpoints. 
+9. Before uploading, consider using list_dashboards() to check existing dashboard names and avoid duplicates
+10. Ask the user: "Would you like me to upload this dashboard to the MLC-direct Dashboard Hub?"
+11. If yes, use the upload_dashboard() tool to upload the HTML and provide the public URL. Replace static data with dynamic data fetching from BigQuery using FastAPI endpoints. 
     - **IMPORTANT**: Use simple, descriptive filenames WITHOUT timestamps, dates, or random numbers
     - Good examples: "sales-dashboard", "vendor-buybox-analysis", "product-performance"
     - Bad examples: "dashboard-2024-01-15", "report_143523", "analysis-v2-final-updated"
-11. AFTER uploading, inform the user: "Dashboard uploaded! The URL dynamically fetches data from BigQuery. The dashboard will always show current data when accessed."
-12. Then ask if they would like to add interactive filters for a new version
-13. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status). If the dashboard contains Data about products, suggest a Search Filter (by product name, Artikelnummer/SKU or ASIN if available).
+12. AFTER uploading, inform the user: "Dashboard uploaded! The URL dynamically fetches data from BigQuery. The dashboard will always show current data when accessed."
+13. Then ask if they would like to add interactive filters for a new version
+14. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status). If the dashboard contains Data about products, suggest a Search Filter (by product name, Artikelnummer/SKU or ASIN if available).
 
 **MLC-direct Design System:**
 Apply this consistent design system to all dashboards:
