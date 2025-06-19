@@ -139,6 +139,7 @@ Your role is to help users understand and analyze their data effectively using t
 - Use get_schema_table_view() to explore table structures
 - Use execute_query() to run SELECT queries and retrieve data
 - Access the bigquery_catalog resource to see available datasets and tables
+- Access the chartjs_docs resource for Chart.js documentation and error-free patterns
 - Create interactive HTML dashboards with charts and visualizations
 
 **Required Workflow:**
@@ -150,11 +151,12 @@ Your role is to help users understand and analyze their data effectively using t
 **Dashboard Creation:**
 When users request a dashboard:
 1. Ask the user to choose between light or dark theme. Dont continue without a theme selection.
-2. Use the company color palette: Primary #4ECDC4 (teal), Secondary #6B46C1 (purple)
-3. Create responsive HTML dashboards with Chart.js for visualizations
-4. Include interactive filters and drill-down capabilities where appropriate
-5. Ensure accessibility and mobile-friendly design
-6. Integrate live BigQuery data using the FastAPI endpoint for real-time updates
+2. ALWAYS consult the chartjs_docs resource for error-free Chart.js patterns before creating charts
+3. Use the company color palette: Primary #4ECDC4 (teal), Secondary #6B46C1 (purple)
+4. Create responsive HTML dashboards with Chart.js for visualizations
+5. Include interactive filters and drill-down capabilities where appropriate
+6. Ensure accessibility and mobile-friendly design
+7. Integrate live BigQuery data using the FastAPI endpoint for real-time updates
 
 **Chart.js Best Practices & Error Prevention:**
 IMPORTANT: Avoid common Chart.js initialization errors by following these patterns:
@@ -310,6 +312,262 @@ function createLiveDashboard() {
 						type: 'text',
 						text: basePrompt,
 					},
+				}],
+			};
+		});
+
+		// Chart.js Documentation Resource
+		this.server.resource("chartjs_docs", "docs://chartjs", {
+			mimeType: "text/markdown",
+			description: "Chart.js v4 documentation and examples for creating error-free charts"
+		}, async () => {
+			const chartjsDocs = `# Chart.js v4 Quick Reference
+
+## Essential Chart Types & Configuration
+
+### 1. Bar Chart
+\`\`\`javascript
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['January', 'February', 'March'],
+        datasets: [{
+            label: 'Sales',
+            data: [12, 19, 3],
+            backgroundColor: '#4ECDC4',
+            borderColor: '#6B46C1',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' },
+            title: { display: true, text: 'Sales Chart' }
+        },
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+\`\`\`
+
+### 2. Line Chart
+\`\`\`javascript
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['Jan', 'Feb', 'Mar'],
+        datasets: [{
+            label: 'Trend',
+            data: [65, 59, 80],
+            borderColor: '#6B46C1',
+            backgroundColor: 'rgba(107, 70, 193, 0.1)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' }
+        }
+    }
+});
+\`\`\`
+
+### 3. Pie/Doughnut Chart
+\`\`\`javascript
+new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Category A', 'Category B', 'Category C'],
+        datasets: [{
+            data: [30, 50, 20],
+            backgroundColor: ['#4ECDC4', '#6B46C1', '#FFE66D']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'right' }
+        }
+    }
+});
+\`\`\`
+
+## Safe Data Access Patterns
+
+### Always Check Data Context
+\`\`\`javascript
+// For dynamic colors based on data values
+backgroundColor: function(context) {
+    // ALWAYS check if parsed exists
+    if (!context.parsed) return '#4ECDC4';
+    
+    const value = context.parsed.y || context.parsed;
+    if (value > 100) return '#4CAF50';
+    if (value > 50) return '#FFE66D';
+    return '#f44336';
+}
+\`\`\`
+
+### Safe Plugin Configuration
+\`\`\`javascript
+options: {
+    plugins: {
+        tooltip: {
+            callbacks: {
+                label: function(context) {
+                    // Safe access pattern
+                    let label = context.dataset?.label || '';
+                    if (label) label += ': ';
+                    
+                    const value = context.parsed?.y ?? context.raw;
+                    if (value !== null) {
+                        label += new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: 'USD'
+                        }).format(value);
+                    }
+                    return label;
+                }
+            }
+        }
+    }
+}
+\`\`\`
+
+## Common Error Prevention
+
+### 1. Initialize with Empty Data
+\`\`\`javascript
+// Start with empty arrays to avoid undefined errors
+const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Data',
+            data: [],
+            backgroundColor: '#4ECDC4'
+        }]
+    },
+    options: { responsive: true }
+});
+
+// Update later with actual data
+chart.data.labels = actualLabels;
+chart.data.datasets[0].data = actualData;
+chart.update();
+\`\`\`
+
+### 2. Destroy Previous Charts
+\`\`\`javascript
+// Prevent "Canvas is already in use" errors
+let chartInstance = null;
+
+function createChart(data) {
+    // Destroy existing chart
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+    
+    chartInstance = new Chart(ctx, {
+        // ... configuration
+    });
+}
+\`\`\`
+
+### 3. Handle Async Data Loading
+\`\`\`javascript
+async function loadChartData() {
+    // Show loading state
+    const loadingChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Loading...'],
+            datasets: [{
+                label: 'Loading data...',
+                data: [0],
+                backgroundColor: '#ccc'
+            }]
+        }
+    });
+    
+    try {
+        const data = await fetchBigQueryData(query);
+        
+        // Update with real data
+        loadingChart.data.labels = data.labels;
+        loadingChart.data.datasets[0].data = data.values;
+        loadingChart.data.datasets[0].backgroundColor = '#4ECDC4';
+        loadingChart.update('active');
+    } catch (error) {
+        // Show error state
+        loadingChart.data.labels = ['Error'];
+        loadingChart.data.datasets[0].label = 'Failed to load data';
+        loadingChart.update();
+    }
+}
+\`\`\`
+
+## Advanced Features
+
+### Mixed Chart Types
+\`\`\`javascript
+new Chart(ctx, {
+    data: {
+        labels: ['Jan', 'Feb', 'Mar'],
+        datasets: [{
+            type: 'bar',
+            label: 'Sales',
+            data: [10, 20, 30],
+            backgroundColor: '#4ECDC4'
+        }, {
+            type: 'line',
+            label: 'Target',
+            data: [15, 25, 35],
+            borderColor: '#6B46C1'
+        }]
+    }
+});
+\`\`\`
+
+### Responsive Font Sizes
+\`\`\`javascript
+options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            labels: {
+                font: {
+                    size: window.innerWidth < 768 ? 10 : 14
+                }
+            }
+        }
+    }
+}
+\`\`\`
+
+### Custom Animations
+\`\`\`javascript
+options: {
+    animation: {
+        duration: 2000,
+        easing: 'easeInOutQuart',
+        onComplete: function() {
+            console.log('Animation complete');
+        }
+    }
+}
+\`\`\``;
+
+			return {
+				contents: [{
+					uri: "docs://chartjs",
+					mimeType: "text/markdown",
+					text: chartjsDocs,
 				}],
 			};
 		});
