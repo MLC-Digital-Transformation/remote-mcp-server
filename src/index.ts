@@ -210,6 +210,45 @@ export class MyMCP extends McpAgent {
 			}
 		});
 
+		// Get dashboard content and URL
+		this.server.tool("get_dashboard", "Get dashboard content and URL by name", {
+			dashboard_name: z.string().describe("The name of the dashboard (with or without .html extension)"),
+			directory: z.string().optional().default("dashboards/user_uploads").describe("Directory in the bucket where the dashboard is stored")
+		}, async ({ dashboard_name, directory }) => {
+			try {
+				const endpoint = `/storage/dashboard/${encodeURIComponent(dashboard_name)}`;
+				const params = new URLSearchParams();
+				
+				if (directory && directory !== "dashboards/user_uploads") {
+					params.append("directory", directory);
+				}
+				
+				const fullEndpoint = params.toString() ? `${endpoint}?${params.toString()}` : endpoint;
+				
+				const result = await this.callFastAPI(fullEndpoint) as {
+					name: string;
+					url: string;
+					content: string;
+					directory: string;
+				};
+				
+				// Format the response
+				return {
+					content: [{
+						type: "text",
+						text: `Dashboard: ${result.name}\n\nPublic URL: ${result.url}\n\nThe dashboard has been retrieved successfully. The HTML content is available for viewing or editing.`
+					}],
+				};
+			} catch (error) {
+				return {
+					content: [{
+						type: "text",
+						text: `Failed to get dashboard: ${error instanceof Error ? error.message : String(error)}`
+					}],
+				};
+			}
+		});
+
 		// BI Analyst & Dashboard Builder prompt
 		this.server.prompt("BI Analyst & Dashboard Builder", "Data analysis assistant for BigQuery queries and dashboard creation", {
 		}, async ({}) => {
@@ -622,6 +661,7 @@ Your role is to help users understand and analyze their data effectively using t
 - Create interactive HTML dashboards with charts and visualizations using the Chart.js patterns provided above
 - Use upload_dashboard() to upload finished dashboards to Google Cloud Storage and get a public URL
 - Use list_dashboards() to see what dashboards already exist (helps avoid duplicate names)
+- Use get_dashboard() to retrieve existing dashboard content and URL by name
 - IMPORTANT: The examples show Bar, Line, and Doughnut charts, but you should use ANY Chart.js chart type (Scatter, Bubble, Radar, Polar Area, Area, etc.) that best visualizes the data
 
 **Required Workflow:**
