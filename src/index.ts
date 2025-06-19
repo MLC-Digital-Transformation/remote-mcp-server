@@ -5,7 +5,7 @@ import { z } from "zod";
 const FASTAPI_BASE_URL = "https://fast-api-165560968031.europe-west3.run.app";
 
 export class MyMCP extends McpAgent {
-	protected role: string = "default";
+	protected role: string = "no_role_assigned";
 
 	server = new McpServer({
 		name: "mlcd-mcp-server",
@@ -46,8 +46,8 @@ export class MyMCP extends McpAgent {
 	}
 
 	async init() {
-		// Initialize role from environment or default
-		this.role = (this.env as any).ROLE || "default";
+		// Initialize role - don't use environment variables
+		this.role = "no_role_assigned";
 		console.log(`MCP Server initialized with role: ${this.role}`);
 
 		// Test role tool - prints the current role
@@ -125,10 +125,10 @@ export default {
 		const roleFromHeader = request.headers.get('x-role');
 		const roleFromEnv = (env as any).ROLE;
 		
-		const role = roleFromQuery || roleFromHeader || roleFromEnv || 'default';
+		const role = roleFromQuery || roleFromHeader || 'no_role_assigned';
 		
 		console.log(`Request received with role: ${role} (source: ${
-			roleFromQuery ? 'query' : roleFromHeader ? 'header' : roleFromEnv ? 'env' : 'default'
+			roleFromQuery ? 'query' : roleFromHeader ? 'header' : 'no_role_assigned'
 		})`);
 		
 		// Create a custom MCP class instance with the extracted role
