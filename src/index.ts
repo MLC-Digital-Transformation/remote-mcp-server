@@ -111,7 +111,7 @@ export class MyMCP extends McpAgent {
 		// Upload HTML dashboard to Google Cloud Storage
 		this.server.tool("upload_dashboard", "Upload an HTML dashboard file to Google Cloud Storage and get a public URL", {
 			html_content: z.string().describe("The complete HTML content of the dashboard. Should contain JavaScript code that fetches data from the FastAPI endpoint using fetch() to /bigquery/execute_query with POST method. Include proper error handling and loading states."),
-			filename: z.string().describe("The base filename for the dashboard (without .html extension)"),
+			filename: z.string().describe("The base filename for the dashboard (without .html extension). Use simple, descriptive names WITHOUT timestamps or dates. Examples: 'sales-dashboard', 'vendor-performance', 'buybox-analysis'"),
 			directory: z.string().optional().default("dashboards/uploads").describe("Directory in the bucket (default: dashboards/uploads)")
 		}, async ({ html_content, filename, directory }) => {
 			try {
@@ -597,7 +597,10 @@ When users request a dashboard:
 7. Use static data from BigQuery queries - dashboards will show a snapshot of current data
 8. Provide the complete HTML file as a single code block for user review
 9. Ask the user: "Would you like me to upload this dashboard to the MLC-direct Dashboard Hub?"
-10. If yes, use the upload_dashboard() tool to upload the HTML and provide the public URL. Replace static data with dynamic data fetching from BigQuery using FastAPI endpoints.
+10. If yes, use the upload_dashboard() tool to upload the HTML and provide the public URL. Replace static data with dynamic data fetching from BigQuery using FastAPI endpoints. 
+    - **IMPORTANT**: Use simple, descriptive filenames WITHOUT timestamps, dates, or random numbers
+    - Good examples: "sales-dashboard", "vendor-buybox-analysis", "product-performance"
+    - Bad examples: "dashboard-2024-01-15", "report_143523", "analysis-v2-final-updated"
 11. AFTER uploading, inform the user: "Dashboard uploaded! The URL dynamically fetches data from BigQuery. The dashboard will always show current data when accessed."
 12. Then ask if they would like to add interactive filters for a new version
 13. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status). If the dashboard contains Data about products, suggest a Search Filter (by product name, Artikelnummer/SKU or ASIN if available).
