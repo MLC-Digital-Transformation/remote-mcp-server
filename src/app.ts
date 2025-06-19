@@ -36,6 +36,7 @@ app.get("/", (c) => {
 
 				<h2>Available Tools</h2>
 				<ul>
+					<li><strong>get_role</strong> - Display current MCP server role (testing)</li>
 					<li><strong>get_schema</strong> - Get BigQuery dataset/table schema information</li>
 				</ul>
 

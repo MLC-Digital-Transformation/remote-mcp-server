@@ -4,6 +4,7 @@ declare namespace Cloudflare {
 	interface Env {
 		MCP_OBJECT: DurableObjectNamespace<import("./src/index").MyMCP>;
 		ASSETS: Fetcher;
+		ROLE?: string;
 	}
 }
 interface Env extends Cloudflare.Env {}

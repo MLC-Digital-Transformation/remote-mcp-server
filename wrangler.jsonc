@@ -25,5 +25,8 @@
 	"observability": {
 		"enabled": true
 	},
-	"assets": { "directory": "./static/", "binding": "ASSETS" }
+	"assets": { "directory": "./static/", "binding": "ASSETS" },
+	"vars": {
+		"ROLE": "admin"
+	}
 }

@@ -29,6 +29,16 @@ The MCP server provides the following proxy capabilities:
 
 No authentication is required - just add this URL to your Claude Desktop configuration.
 
+## Role Configuration
+
+The MCP server accepts a `ROLE` environment variable to configure its behavior:
+
+- **Default Role**: `admin` (configured in wrangler.jsonc)
+- **Environment Variable**: `ROLE` 
+- **Testing**: Use the `get_role` tool to verify the current role
+
+To change the role, update the `vars.ROLE` value in `wrangler.jsonc`.
+
 ## Adding New MCP Features
 
 ### Adding New Tools
@@ -124,7 +134,9 @@ The current implementation provides these tools and resources:
 
 ### Available Tools
 
-1. **get_schema** - Get BigQuery dataset/table schema information
+1. **get_role** - Display current MCP server role (for testing role configuration)
+   - Parameters: None
+2. **get_schema** - Get BigQuery dataset/table schema information
    - Parameters: `dataset_id` (optional string), `table_name` (optional string)
 
 ### Available Resources

@@ -5,6 +5,8 @@ import { z } from "zod";
 const FASTAPI_BASE_URL = "https://fast-api-165560968031.europe-west3.run.app";
 
 export class MyMCP extends McpAgent {
+	private role: string = "default";
+
 	server = new McpServer({
 		name: "mlcd-mcp-server",
 		version: "1.0.0",
@@ -38,6 +40,18 @@ export class MyMCP extends McpAgent {
 	}
 
 	async init() {
+		// Initialize role from environment or default
+		this.role = (this.env as any).ROLE || "default";
+		console.log(`MCP Server initialized with role: ${this.role}`);
+
+		// Test role tool - prints the current role
+		this.server.tool("get_role", {}, async () => {
+			console.log(`Current role accessed: ${this.role}`);
+			return {
+				content: [{ type: "text", text: `Current MCP Server Role: ${this.role}` }],
+			};
+		});
+
 		// Get BigQuery schema
 		this.server.tool("get_schema", {
 			dataset_id: z.string().optional().describe("BigQuery dataset ID (optional)"),
