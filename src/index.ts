@@ -154,7 +154,7 @@ When users request a dashboard:
 2. ALWAYS consult the chartjs_docs resource for error-free Chart.js patterns before creating charts
 3. Use the company color palette: Primary #4ECDC4 (teal), Secondary #6B46C1 (purple)
 4. Create complete, self-contained HTML files with embedded CSS and JavaScript
-5. Include Chart.js from CDN: https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js
+5. Include Chart.js from CDN: https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js
 6. Ensure all code is production-ready with proper error handling
 7. Include interactive filters and drill-down capabilities where appropriate
 8. Integrate live BigQuery data using the FastAPI endpoint for real-time updates
