@@ -5,12 +5,18 @@ import { z } from "zod";
 const FASTAPI_BASE_URL = "https://fast-api-165560968031.europe-west3.run.app";
 
 export class MyMCP extends McpAgent {
-	private role: string = "default";
+	protected role: string = "default";
 
 	server = new McpServer({
 		name: "mlcd-mcp-server",
 		version: "1.0.0",
 	});
+
+	// Method to set role dynamically
+	setRole(role: string) {
+		this.role = role;
+		console.log(`Role set to: ${this.role}`);
+	}
 
 	private async callFastAPI(endpoint: string, method: string = "GET", body?: any) {
 		const url = `${FASTAPI_BASE_URL}${endpoint}`;
@@ -115,5 +121,32 @@ export class MyMCP extends McpAgent {
 	}
 }
 
-// Export the MCP agent directly mounted at /sse
-export default MyMCP.mount("/sse");
+// Create a handler that extracts role from request and passes it to MCP agent
+export default {
+	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+		// Extract role from query parameters, headers, or environment (in order of preference)
+		const url = new URL(request.url);
+		const roleFromQuery = url.searchParams.get('role');
+		const roleFromHeader = request.headers.get('x-role');
+		const roleFromEnv = (env as any).ROLE;
+		
+		const role = roleFromQuery || roleFromHeader || roleFromEnv || 'default';
+		
+		console.log(`Request received with role: ${role} (source: ${
+			roleFromQuery ? 'query' : roleFromHeader ? 'header' : roleFromEnv ? 'env' : 'default'
+		})`);
+		
+		// Create a custom MCP class instance with the extracted role
+		class DynamicMCP extends MyMCP {
+			async init() {
+				// Override the role with the request-specific role
+				this.setRole(role);
+				await super.init();
+			}
+		}
+		
+		// Mount the dynamic MCP agent
+		const mcpHandler = DynamicMCP.mount("/sse");
+		return mcpHandler.fetch(request, env, ctx);
+	}
+};

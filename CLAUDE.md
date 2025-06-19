@@ -31,13 +31,45 @@ No authentication is required - just add this URL to your Claude Desktop configu
 
 ## Role Configuration
 
-The MCP server accepts a `ROLE` environment variable to configure its behavior:
+The MCP server supports dynamic role configuration through multiple methods (in order of preference):
 
-- **Default Role**: `admin` (configured in wrangler.jsonc)
-- **Environment Variable**: `ROLE` 
-- **Testing**: Use the `get_role` tool to verify the current role
+1. **Query Parameter**: `?role=data_analyst`
+2. **HTTP Header**: `x-role: data_analyst`
+3. **Environment Variable**: `ROLE` (fallback, configured in wrangler.jsonc)
+4. **Default**: `default`
 
-To change the role, update the `vars.ROLE` value in `wrangler.jsonc`.
+### Claude Desktop Configuration Examples
+
+**Basic with role:**
+```json
+"mlcd-mcp-server": {
+  "command": "npx",
+  "args": [
+    "mcp-remote",
+    "https://remote-mcp-server.matthew-ludwig.workers.dev/sse?role=data_analyst"
+  ]
+}
+```
+
+**Multiple role-based servers:**
+```json
+"mlcd-admin": {
+  "command": "npx",
+  "args": [
+    "mcp-remote",
+    "https://remote-mcp-server.matthew-ludwig.workers.dev/sse?role=admin"
+  ]
+},
+"mlcd-analyst": {
+  "command": "npx",
+  "args": [
+    "mcp-remote",
+    "https://remote-mcp-server.matthew-ludwig.workers.dev/sse?role=data_analyst"
+  ]
+}
+```
+
+**Testing**: Use the `get_role` tool to verify the current role.
 
 ## Adding New MCP Features
 
