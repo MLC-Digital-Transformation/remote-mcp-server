@@ -131,16 +131,283 @@ Use this catalog information to understand what data is available for analysis a
 `;
 			}
 
-const basePrompt = `You are an expert data analyst and dashboard builder specializing in BigQuery and business intelligence.${catalogData} 
+			// Get the Chart.js documentation
+			const chartjsDocs = `# Chart.js v3.9.1 Quick Reference
+
+## Essential Setup & Configuration
+
+### Container Setup (IMPORTANT)
+\`\`\`html
+<!-- Always wrap canvas in a container with defined height -->
+<div class="chart-container" style="position: relative; height: 400px;">
+    <canvas id="myChart"></canvas>
+</div>
+\`\`\`
+
+### Basic Chart Initialization
+\`\`\`javascript
+// Always get 2D context
+const ctx = document.getElementById('myChart').getContext('2d');
+const chart = new Chart(ctx, config);
+\`\`\`
+
+## Chart Types with Theme Support
+
+### 1. Bar Chart with Dark/Light Theme
+\`\`\`javascript
+// Theme-aware colors
+const isDarkTheme = true; // or detect from user selection
+const colors = {
+    grid: isDarkTheme ? '#333' : '#e0e0e0',
+    text: isDarkTheme ? '#888' : '#666',
+    primary: '#4ECDC4',
+    secondary: '#6B46C1'
+};
+
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['January', 'February', 'March'],
+        datasets: [{
+            label: 'Sales',
+            data: [12, 19, 3],
+            backgroundColor: colors.primary,
+            borderColor: colors.secondary,
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { 
+                position: 'top',
+                labels: { color: colors.text }
+            },
+            title: { 
+                display: true, 
+                text: 'Sales Chart',
+                color: colors.text
+            }
+        },
+        scales: {
+            y: { 
+                beginAtZero: true,
+                grid: { color: colors.grid },
+                ticks: { color: colors.text }
+            },
+            x: {
+                grid: { color: colors.grid },
+                ticks: { color: colors.text }
+            }
+        }
+    }
+});
+\`\`\`
+
+### 2. Line Chart with Theme Support
+\`\`\`javascript
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['Jan', 'Feb', 'Mar'],
+        datasets: [{
+            label: 'Trend',
+            data: [65, 59, 80],
+            borderColor: colors.secondary,
+            backgroundColor: isDarkTheme ? 'rgba(107, 70, 193, 0.1)' : 'rgba(107, 70, 193, 0.05)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { 
+                position: 'top',
+                labels: { color: colors.text }
+            }
+        },
+        scales: {
+            y: {
+                grid: { color: colors.grid },
+                ticks: { color: colors.text }
+            },
+            x: {
+                grid: { color: colors.grid },
+                ticks: { color: colors.text }
+            }
+        }
+    }
+});
+\`\`\`
+
+### 3. Doughnut Chart (No scales needed)
+\`\`\`javascript
+new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Category A', 'Category B', 'Category C'],
+        datasets: [{
+            data: [30, 50, 20],
+            backgroundColor: ['#4ECDC4', '#6B46C1', '#FFE66D'],
+            borderColor: isDarkTheme ? '#1a1a1a' : '#ffffff',
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { 
+                position: 'right',
+                labels: { color: colors.text }
+            },
+            title: {
+                display: true,
+                text: 'Distribution',
+                color: colors.text
+            }
+        }
+        // Note: No scales for doughnut/pie charts
+    }
+});
+\`\`\`
+
+## Real-World Data Patterns
+
+### Data Transformation from API
+\`\`\`javascript
+// Transform BigQuery results for Chart.js
+const transformData = (queryResults) => {
+    // Validate data first
+    if (!queryResults.rows || queryResults.rows.length === 0) {
+        return {
+            labels: ['No Data'],
+            datasets: [{ data: [0], backgroundColor: '#ccc' }]
+        };
+    }
+    
+    // Map data safely with fallbacks
+    return {
+        labels: queryResults.rows.map(row => row.label || 'Unknown'),
+        datasets: [{
+            label: 'Values',
+            data: queryResults.rows.map(row => row.value || 0),
+            backgroundColor: colors.primary
+        }]
+    };
+};
+\`\`\`
+
+## Common Error Prevention
+
+### 1. Initialize with Empty Data
+\`\`\`javascript
+// Start with empty arrays to avoid undefined errors
+const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Data',
+            data: [],
+            backgroundColor: '#4ECDC4'
+        }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+});
+
+// Update later with actual data
+chart.data.labels = actualLabels;
+chart.data.datasets[0].data = actualData;
+chart.update();
+\`\`\`
+
+### 2. Destroy Previous Charts
+\`\`\`javascript
+// Prevent "Canvas is already in use" errors
+let chartInstance = null;
+
+function createChart(data) {
+    // Destroy existing chart
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+    
+    chartInstance = new Chart(ctx, {
+        // ... configuration
+    });
+}
+\`\`\`
+
+### 3. Complete Async Data Loading Pattern
+\`\`\`javascript
+async function loadChartData(chartId, query) {
+    const ctx = document.getElementById(chartId).getContext('2d');
+    
+    // Show loading state
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Loading...'],
+            datasets: [{
+                label: 'Loading data...',
+                data: [0],
+                backgroundColor: '#ccc'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+    
+    try {
+        const response = await fetch('https://fast-api-165560968031.europe-west3.run.app/bigquery/execute_query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query, limit: 100 })
+        });
+        
+        if (!response.ok) throw new Error('API request failed');
+        
+        const data = await response.json();
+        
+        // Transform and update chart
+        const transformed = transformData(data);
+        chart.data = transformed;
+        chart.options.plugins.legend.display = true;
+        chart.update('active'); // Smooth animation
+        
+    } catch (error) {
+        // Show error state
+        chart.data.labels = ['Error Loading Data'];
+        chart.data.datasets[0] = {
+            label: error.message,
+            data: [0],
+            backgroundColor: '#f44336'
+        };
+        chart.update();
+    }
+}
+\`\`\``;
+
+const basePrompt = `You are an expert data analyst and dashboard builder specializing in BigQuery and business intelligence.${catalogData}
+
+**IMPORTANT Chart.js Reference:**
+${chartjsDocs} 
 			
 Your role is to help users understand and analyze their data effectively using the available BigQuery tools, and create interactive dashboards when requested.
 
 **Your Capabilities:**
 - Use get_schema_table_view() to explore table structures
 - Use execute_query() to run SELECT queries and retrieve data
-- Access the bigquery_catalog resource to see available datasets and tables
-- Access the chartjs_docs resource for Chart.js documentation and error-free patterns
-- Create interactive HTML dashboards with charts and visualizations
+- Access the bigquery_catalog resource to see available datasets and tables (if not already provided above)
+- Create interactive HTML dashboards with charts and visualizations using the Chart.js patterns provided above
 
 **Required Workflow:**
 1. ALWAYS start by reading the bigquery_catalog resource to understand what datasets and tables are available
@@ -151,7 +418,7 @@ Your role is to help users understand and analyze their data effectively using t
 **Dashboard Creation:**
 When users request a dashboard:
 1. Ask the user to choose between light or dark theme. Dont continue without a theme selection.
-2. ALWAYS consult the chartjs_docs resource for error-free Chart.js patterns before creating charts
+2. Use the Chart.js patterns provided above to create error-free visualizations
 3. Use the company color palette: Primary #4ECDC4 (teal), Secondary #6B46C1 (purple)
 4. Create complete, self-contained HTML files with embedded CSS and JavaScript
 5. Include Chart.js from CDN: https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js
