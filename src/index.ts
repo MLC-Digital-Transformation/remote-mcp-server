@@ -191,7 +191,7 @@ Use this catalog information to understand what data is available for analysis a
 			}
 
 			// Get the Chart.js documentation
-			const chartjsDocs = `# Chart.js v3.9.1 Quick Reference
+			const chartjsDocs = `# Chart.js v3.9.1 Quick Reference with MLC-direct Design System
 
 ## Essential Setup & Configuration
 
@@ -210,17 +210,18 @@ const ctx = document.getElementById('myChart').getContext('2d');
 const chart = new Chart(ctx, config);
 \`\`\`
 
-## Chart Types with Theme Support
+## Chart Types with MLC-direct Design System
 
-### 1. Bar Chart with Dark/Light Theme
+### 1. Bar Chart
 \`\`\`javascript
-// Theme-aware colors
-const isDarkTheme = true; // or detect from user selection
-const colors = {
-    grid: isDarkTheme ? '#333' : '#e0e0e0',
-    text: isDarkTheme ? '#888' : '#666',
+// MLC-direct Design System colors
+const chartColors = {
     primary: '#4ECDC4',
-    secondary: '#6B46C1'
+    secondary: '#6B46C1',
+    success: '#10B981',
+    warning: '#F59E0B',
+    danger: '#EF4444',
+    gray: '#6B7280'
 };
 
 new Chart(ctx, {
@@ -230,9 +231,10 @@ new Chart(ctx, {
         datasets: [{
             label: 'Sales',
             data: [12, 19, 3],
-            backgroundColor: colors.primary,
-            borderColor: colors.secondary,
-            borderWidth: 1
+            backgroundColor: chartColors.primary,
+            borderColor: chartColors.secondary,
+            borderWidth: 2,
+            borderRadius: 8
         }]
     },
     options: {
@@ -241,30 +243,57 @@ new Chart(ctx, {
         plugins: {
             legend: { 
                 position: 'top',
-                labels: { color: colors.text }
+                labels: { 
+                    color: '#1F2937',
+                    font: {
+                        family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        size: 14
+                    },
+                    padding: 20
+                }
             },
             title: { 
                 display: true, 
                 text: 'Sales Chart',
-                color: colors.text
+                color: '#1F2937',
+                font: {
+                    size: 18,
+                    weight: '600'
+                }
             }
         },
         scales: {
             y: { 
                 beginAtZero: true,
-                grid: { color: colors.grid },
-                ticks: { color: colors.text }
+                grid: { 
+                    color: '#E5E7EB',
+                    drawBorder: false
+                },
+                ticks: { 
+                    color: '#6B7280',
+                    font: {
+                        size: 12
+                    }
+                }
             },
             x: {
-                grid: { color: colors.grid },
-                ticks: { color: colors.text }
+                grid: { 
+                    color: '#E5E7EB',
+                    drawBorder: false
+                },
+                ticks: { 
+                    color: '#6B7280',
+                    font: {
+                        size: 12
+                    }
+                }
             }
         }
     }
 });
 \`\`\`
 
-### 2. Line Chart with Theme Support
+### 2. Line Chart
 \`\`\`javascript
 new Chart(ctx, {
     type: 'line',
@@ -273,8 +302,8 @@ new Chart(ctx, {
         datasets: [{
             label: 'Trend',
             data: [65, 59, 80],
-            borderColor: colors.secondary,
-            backgroundColor: isDarkTheme ? 'rgba(107, 70, 193, 0.1)' : 'rgba(107, 70, 193, 0.05)',
+            borderColor: chartColors.secondary,
+            backgroundColor: 'rgba(107, 70, 193, 0.1)',
             tension: 0.1
         }]
     },
@@ -284,17 +313,40 @@ new Chart(ctx, {
         plugins: {
             legend: { 
                 position: 'top',
-                labels: { color: colors.text }
+                labels: { 
+                    color: '#1F2937',
+                    font: {
+                        family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        size: 14
+                    },
+                    padding: 20
+                }
             }
         },
         scales: {
             y: {
-                grid: { color: colors.grid },
-                ticks: { color: colors.text }
+                grid: { 
+                    color: '#E5E7EB',
+                    drawBorder: false
+                },
+                ticks: { 
+                    color: '#6B7280',
+                    font: {
+                        size: 12
+                    }
+                }
             },
             x: {
-                grid: { color: colors.grid },
-                ticks: { color: colors.text }
+                grid: { 
+                    color: '#E5E7EB',
+                    drawBorder: false
+                },
+                ticks: { 
+                    color: '#6B7280',
+                    font: {
+                        size: 12
+                    }
+                }
             }
         }
     }
@@ -310,7 +362,7 @@ new Chart(ctx, {
         datasets: [{
             data: [30, 50, 20],
             backgroundColor: ['#4ECDC4', '#6B46C1', '#FFE66D'],
-            borderColor: isDarkTheme ? '#1a1a1a' : '#ffffff',
+            borderColor: '#ffffff',
             borderWidth: 2
         }]
     },
@@ -320,12 +372,23 @@ new Chart(ctx, {
         plugins: {
             legend: { 
                 position: 'right',
-                labels: { color: colors.text }
+                labels: { 
+                    color: '#1F2937',
+                    font: {
+                        family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        size: 14
+                    },
+                    padding: 20
+                }
             },
             title: {
                 display: true,
                 text: 'Distribution',
-                color: colors.text
+                color: '#1F2937',
+                font: {
+                    size: 18,
+                    weight: '600'
+                }
             }
         }
         // Note: No scales for doughnut/pie charts
@@ -353,7 +416,7 @@ const transformData = (queryResults) => {
         datasets: [{
             label: 'Values',
             data: queryResults.rows.map(row => row.value || 0),
-            backgroundColor: colors.primary
+            backgroundColor: chartColors.primary
         }]
     };
 };
@@ -485,7 +548,7 @@ Your role is to help users understand and analyze their data effectively using t
 **Dashboard Creation Workflow:**
 When users request a dashboard:
 1. Use the Chart.js patterns provided above to create error-free visualizations
-2. Use the company color palette: Primary #4ECDC4 (teal), Secondary #6B46C1 (purple)
+2. Apply the MLC-direct Design System (see below)
 3. Create complete, self-contained HTML files with embedded CSS and JavaScript
 4. Include Chart.js from CDN: https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js
 5. Ensure all code is production-ready with proper error handling
@@ -496,7 +559,279 @@ When users request a dashboard:
 10. If yes, use the upload_dashboard() tool to upload the HTML and provide the public URL. Replace static data with dynamic data fetching from BigQuery using FastAPI endpoints.
 11. AFTER uploading, inform the user: "Dashboard uploaded! The URL dynamically fetches data from BigQuery. The dashboard will always show current data when accessed."
 12. Then ask if they would like to add interactive filters for a new version
-13. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status)
+13. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status). If the dashboard contains Data about products, suggest a Search Filter (by product name, Artikelnummer/SKU or ASIN if available).
+
+**MLC-direct Design System:**
+Apply this consistent design system to all dashboards:
+
+\`\`\`css
+/* CSS Variables - Always include these in your dashboards */
+:root {
+    --primary-color: #4ECDC4;      /* Teal - Primary brand color */
+    --secondary-color: #6B46C1;    /* Purple - Secondary brand color */
+    --success-color: #10B981;      /* Green - Success/positive states */
+    --warning-color: #F59E0B;      /* Orange - Warning states */
+    --danger-color: #EF4444;       /* Red - Error/danger states */
+    --bg-color: #F8FAFC;          /* Light gray - Page background */
+    --card-bg: #FFFFFF;           /* White - Card backgrounds */
+    --text-primary: #1F2937;      /* Dark gray - Primary text */
+    --text-secondary: #6B7280;    /* Medium gray - Secondary text */
+    --border-color: #E5E7EB;      /* Light gray - Borders */
+}
+
+/* Typography - Use system font stack */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+/* Container Layout */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+/* Header with Gradient */
+.header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 2rem 1rem;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+/* Card Component */
+.card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    border-left: 4px solid var(--primary-color);
+}
+
+.stat-card h3 {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.stat-card p {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Chart Container */
+.chart-container {
+    position: relative;
+    height: 400px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Responsive Grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-container {
+        height: 300px;
+    }
+}
+\`\`\`
+
+**Chart.js Theme Configuration:**
+\`\`\`javascript
+// Standard chart colors matching the design system
+const chartColors = {
+    primary: '#4ECDC4',
+    secondary: '#6B46C1',
+    success: '#10B981',
+    warning: '#F59E0B',
+    danger: '#EF4444',
+    gray: '#6B7280'
+};
+
+// Standard chart options for consistent styling
+const standardChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            position: 'top',
+            labels: {
+                color: '#1F2937',
+                font: {
+                    family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                    size: 14
+                },
+                padding: 20
+            }
+        },
+        title: {
+            display: true,
+            color: '#1F2937',
+            font: {
+                size: 18,
+                weight: '600'
+            },
+            padding: {
+                bottom: 20
+            }
+        }
+    },
+    scales: {
+        y: {
+            beginAtZero: true,
+            grid: {
+                color: '#E5E7EB',
+                drawBorder: false
+            },
+            ticks: {
+                color: '#6B7280',
+                font: {
+                    size: 12
+                }
+            }
+        },
+        x: {
+            grid: {
+                display: false,
+                drawBorder: false
+            },
+            ticks: {
+                color: '#6B7280',
+                font: {
+                    size: 12
+                }
+            }
+        }
+    }
+};
+
+// Example chart with proper theming
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Sales Data',
+            data: values,
+            backgroundColor: chartColors.primary,
+            borderColor: chartColors.secondary,
+            borderWidth: 2,
+            borderRadius: 8,
+            hoverBackgroundColor: chartColors.secondary
+        }]
+    },
+    options: {
+        ...standardChartOptions,
+        plugins: {
+            ...standardChartOptions.plugins,
+            title: {
+                ...standardChartOptions.plugins.title,
+                text: 'Monthly Sales Performance'
+            }
+        }
+    }
+});
+\`\`\`
+
+**Dashboard HTML Template:**
+\`\`\`html
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLC-direct Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        /* Include all CSS variables and styles from above */
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Dashboard Title</h1>
+        <p>Dashboard subtitle or description</p>
+    </div>
+    
+    <div class="container">
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>€1.2M</h3>
+                <p>Total Revenue</p>
+            </div>
+            <!-- More stat cards -->
+        </div>
+        
+        <!-- Charts Grid -->
+        <div class="dashboard-grid">
+            <div class="chart-container">
+                <canvas id="chart1"></canvas>
+            </div>
+            <!-- More charts -->
+        </div>
+    </div>
+    
+    <script>
+        // Your chart initialization code here
+    </script>
+</body>
+</html>
+\`\`\`
 
 **Chart.js Best Practices & Error Prevention:**
 IMPORTANT: Avoid common Chart.js initialization errors by following these patterns:
@@ -810,17 +1145,18 @@ const ctx = document.getElementById('myChart').getContext('2d');
 const chart = new Chart(ctx, config);
 \`\`\`
 
-## Chart Types with Theme Support
+## Chart Types with MLC-direct Design System
 
-### 1. Bar Chart with Dark/Light Theme
+### 1. Bar Chart
 \`\`\`javascript
-// Theme-aware colors
-const isDarkTheme = true; // or detect from user selection
-const colors = {
-    grid: isDarkTheme ? '#333' : '#e0e0e0',
-    text: isDarkTheme ? '#888' : '#666',
+// MLC-direct Design System colors
+const chartColors = {
     primary: '#4ECDC4',
-    secondary: '#6B46C1'
+    secondary: '#6B46C1',
+    success: '#10B981',
+    warning: '#F59E0B',
+    danger: '#EF4444',
+    gray: '#6B7280'
 };
 
 new Chart(ctx, {
@@ -830,9 +1166,10 @@ new Chart(ctx, {
         datasets: [{
             label: 'Sales',
             data: [12, 19, 3],
-            backgroundColor: colors.primary,
-            borderColor: colors.secondary,
-            borderWidth: 1
+            backgroundColor: chartColors.primary,
+            borderColor: chartColors.secondary,
+            borderWidth: 2,
+            borderRadius: 8
         }]
     },
     options: {
@@ -841,30 +1178,57 @@ new Chart(ctx, {
         plugins: {
             legend: { 
                 position: 'top',
-                labels: { color: colors.text }
+                labels: { 
+                    color: '#1F2937',
+                    font: {
+                        family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        size: 14
+                    },
+                    padding: 20
+                }
             },
             title: { 
                 display: true, 
                 text: 'Sales Chart',
-                color: colors.text
+                color: '#1F2937',
+                font: {
+                    size: 18,
+                    weight: '600'
+                }
             }
         },
         scales: {
             y: { 
                 beginAtZero: true,
-                grid: { color: colors.grid },
-                ticks: { color: colors.text }
+                grid: { 
+                    color: '#E5E7EB',
+                    drawBorder: false
+                },
+                ticks: { 
+                    color: '#6B7280',
+                    font: {
+                        size: 12
+                    }
+                }
             },
             x: {
-                grid: { color: colors.grid },
-                ticks: { color: colors.text }
+                grid: { 
+                    color: '#E5E7EB',
+                    drawBorder: false
+                },
+                ticks: { 
+                    color: '#6B7280',
+                    font: {
+                        size: 12
+                    }
+                }
             }
         }
     }
 });
 \`\`\`
 
-### 2. Line Chart with Theme Support
+### 2. Line Chart
 \`\`\`javascript
 new Chart(ctx, {
     type: 'line',
@@ -873,8 +1237,8 @@ new Chart(ctx, {
         datasets: [{
             label: 'Trend',
             data: [65, 59, 80],
-            borderColor: colors.secondary,
-            backgroundColor: isDarkTheme ? 'rgba(107, 70, 193, 0.1)' : 'rgba(107, 70, 193, 0.05)',
+            borderColor: chartColors.secondary,
+            backgroundColor: 'rgba(107, 70, 193, 0.1)',
             tension: 0.1
         }]
     },
@@ -884,17 +1248,40 @@ new Chart(ctx, {
         plugins: {
             legend: { 
                 position: 'top',
-                labels: { color: colors.text }
+                labels: { 
+                    color: '#1F2937',
+                    font: {
+                        family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        size: 14
+                    },
+                    padding: 20
+                }
             }
         },
         scales: {
             y: {
-                grid: { color: colors.grid },
-                ticks: { color: colors.text }
+                grid: { 
+                    color: '#E5E7EB',
+                    drawBorder: false
+                },
+                ticks: { 
+                    color: '#6B7280',
+                    font: {
+                        size: 12
+                    }
+                }
             },
             x: {
-                grid: { color: colors.grid },
-                ticks: { color: colors.text }
+                grid: { 
+                    color: '#E5E7EB',
+                    drawBorder: false
+                },
+                ticks: { 
+                    color: '#6B7280',
+                    font: {
+                        size: 12
+                    }
+                }
             }
         }
     }
@@ -910,7 +1297,7 @@ new Chart(ctx, {
         datasets: [{
             data: [30, 50, 20],
             backgroundColor: ['#4ECDC4', '#6B46C1', '#FFE66D'],
-            borderColor: isDarkTheme ? '#1a1a1a' : '#ffffff',
+            borderColor: '#ffffff',
             borderWidth: 2
         }]
     },
@@ -920,12 +1307,23 @@ new Chart(ctx, {
         plugins: {
             legend: { 
                 position: 'right',
-                labels: { color: colors.text }
+                labels: { 
+                    color: '#1F2937',
+                    font: {
+                        family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        size: 14
+                    },
+                    padding: 20
+                }
             },
             title: {
                 display: true,
                 text: 'Distribution',
-                color: colors.text
+                color: '#1F2937',
+                font: {
+                    size: 18,
+                    weight: '600'
+                }
             }
         }
         // Note: No scales for doughnut/pie charts
@@ -955,18 +1353,41 @@ new Chart(ctx, {
         plugins: {
             legend: { 
                 position: 'top',
-                labels: { color: colors.text }
+                labels: { 
+                    color: '#1F2937',
+                    font: {
+                        family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        size: 14
+                    },
+                    padding: 20
+                }
             }
         },
         scales: {
             y: {
                 beginAtZero: true,
-                grid: { color: colors.grid },
-                ticks: { color: colors.text }
+                grid: { 
+                    color: '#E5E7EB',
+                    drawBorder: false
+                },
+                ticks: { 
+                    color: '#6B7280',
+                    font: {
+                        size: 12
+                    }
+                }
             },
             x: {
-                grid: { color: colors.grid },
-                ticks: { color: colors.text }
+                grid: { 
+                    color: '#E5E7EB',
+                    drawBorder: false
+                },
+                ticks: { 
+                    color: '#6B7280',
+                    font: {
+                        size: 12
+                    }
+                }
             }
         }
     }
@@ -993,7 +1414,7 @@ const transformData = (queryResults) => {
         datasets: [{
             label: 'Values',
             data: queryResults.rows.map(row => row.value || 0),
-            backgroundColor: colors.primary
+            backgroundColor: chartColors.primary
         }]
     };
 };
@@ -1004,7 +1425,7 @@ const transformData = (queryResults) => {
 // For dynamic colors based on data values
 backgroundColor: function(context) {
     // ALWAYS check if parsed exists
-    if (!context.parsed) return colors.primary;
+    if (!context.parsed) return chartColors.primary;
     
     const value = context.parsed.y || context.parsed;
     if (value > 100) return '#4CAF50';
@@ -1137,41 +1558,75 @@ async function loadChartData(chartId, query) {
 
 ## Complete Dashboard Example
 
-### Full HTML Structure with Dark Theme
+### Full HTML Structure with MLC-direct Design System
 \`\`\`html
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <title>BigQuery Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLC-direct Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
+        :root {
+            --primary-color: #4ECDC4;
+            --secondary-color: #6B46C1;
+            --success-color: #10B981;
+            --warning-color: #F59E0B;
+            --danger-color: #EF4444;
+            --bg-color: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
             margin: 0;
-            padding: 20px;
-            background-color: #1a1a1a;
-            color: #ffffff;
+            padding: 0;
         }
-        .dashboard-container {
-            max-width: 1200px;
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .container {
+            max-width: 1400px;
             margin: 0 auto;
+            padding: 2rem 1rem;
         }
+        
         .chart-container {
             position: relative;
             height: 400px;
-            margin-bottom: 30px;
-            background: #2a2a2a;
-            border-radius: 8px;
-            padding: 20px;
-        }
-        h1, h2 {
-            color: #4ECDC4;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
         }
     </style>
 </head>
 <body>
-    <div class="dashboard-container">
+    <div class="header">
         <h1>Analytics Dashboard</h1>
+        <p>Powered by MLC-direct</p>
+    </div>
+    <div class="container">
         <div class="chart-container">
             <canvas id="mainChart"></canvas>
         </div>
