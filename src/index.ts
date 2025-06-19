@@ -1,5 +1,5 @@
-import { McpAgent } from "agents/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpAgent } from "agents/mcp";
 import { z } from "zod";
 
 const FASTAPI_BASE_URL = "https://fast-api-165560968031.europe-west3.run.app";
@@ -60,25 +60,20 @@ export class MyMCP extends McpAgent {
 
 		// Get BigQuery schema
 		this.server.tool("get_schema", {
-			dataset_id: z.string().optional().describe("BigQuery dataset ID (optional)"),
-			table_name: z.string().optional().describe("BigQuery table name (optional)")
-		}, async ({ dataset_id, table_name }) => {
+			dataset_with_table: z.string().describe("Dataset and table name in format 'dataset.table' (e.g., 'products.Produkt')"),
+			include_description: z.boolean().optional().default(true).describe("Include column descriptions in the schema")
+		}, async ({ dataset_with_table, include_description }) => {
 			try {
-				let endpoint = "/bigquery/get_schema";
+				const endpoint = `/bigquery/schema/${dataset_with_table}`;
 				const params = new URLSearchParams();
 				
-				if (dataset_id) {
-					params.append("dataset_id", dataset_id);
-				}
-				if (table_name) {
-					params.append("table_name", table_name);
+				if (include_description !== undefined) {
+					params.append("include_description", include_description.toString());
 				}
 				
-				if (params.toString()) {
-					endpoint += `?${params.toString()}`;
-				}
+				const fullEndpoint = params.toString() ? `${endpoint}?${params.toString()}` : endpoint;
 				
-				const result = await this.callFastAPI(endpoint);
+				const result = await this.callFastAPI(fullEndpoint);
 				return {
 					content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
 				};
