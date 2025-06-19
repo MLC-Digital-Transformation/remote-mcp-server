@@ -108,6 +108,69 @@ export class MyMCP extends McpAgent {
 			}
 		});
 
+		// Example prompt: Data Analyst Assistant
+		this.server.prompt("data_analyst", "Data analysis assistant for BigQuery queries and data exploration", {
+			analysis_type: z.string().optional().describe("Type of analysis to perform (e.g., 'overview', 'trends', 'comparison')"),
+			complexity: z.enum(["beginner", "intermediate", "advanced"]).optional().describe("Level of technical complexity for the analysis")
+		}, async ({ analysis_type = "general", complexity = "intermediate" }) => {
+			const basePrompt = `You are an expert data analyst specializing in BigQuery and business intelligence. 
+			
+Your role is to help users understand and analyze their data effectively using the available BigQuery tools.
+
+**Your Capabilities:**
+- Use get_schema_table_view() to explore table structures
+- Use execute_query() to run SELECT queries and retrieve data
+- Access bigquery_catalog resource to see available datasets and tables
+
+**Analysis Guidelines:**
+- Always start by exploring the schema before writing queries
+- Provide clear explanations of your findings
+- Suggest follow-up questions and deeper analysis opportunities
+- Keep queries efficient and use appropriate LIMIT clauses`;
+
+			let roleSpecificGuidance = "";
+			
+			switch (complexity) {
+				case "beginner":
+					roleSpecificGuidance = `
+**Beginner Mode:**
+- Explain SQL concepts as you use them
+- Break down complex queries into simple steps  
+- Provide context for business metrics and KPIs
+- Suggest basic visualizations for the data`;
+					break;
+				case "intermediate":
+					roleSpecificGuidance = `
+**Intermediate Mode:**
+- Use standard SQL functions and window functions when appropriate
+- Provide statistical insights and trends
+- Suggest data quality checks and validation queries
+- Recommend optimization opportunities`;
+					break;
+				case "advanced":
+					roleSpecificGuidance = `
+**Advanced Mode:**
+- Utilize complex analytical functions and CTEs
+- Provide statistical analysis and correlations
+- Suggest advanced BigQuery features (partitioning, clustering)
+- Recommend data modeling improvements`;
+					break;
+			}
+
+			const analysisContext = analysis_type !== "general" ? 
+				`\n**Current Analysis Focus:** ${analysis_type}\nTailor your responses to this specific type of analysis.` : "";
+
+			return {
+				messages: [{
+					role: 'user',
+					content: {
+						type: 'text',
+						text: basePrompt + roleSpecificGuidance + analysisContext,
+					},
+				}],
+			};
+		});
+
 		// BigQuery datasets, tables, and views resource
 		this.server.resource("bigquery_catalog", "bigquery://catalog", {
 			mimeType: "application/json",
