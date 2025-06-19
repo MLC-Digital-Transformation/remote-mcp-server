@@ -321,14 +321,40 @@ function createLiveDashboard() {
 		// Chart.js Documentation Resource
 		this.server.resource("chartjs_docs", "docs://chartjs", {
 			mimeType: "text/markdown",
-			description: "Chart.js v4 documentation and examples for creating error-free charts"
+			description: "Chart.js v3.9.1 documentation and examples for creating error-free charts"
 		}, async () => {
-			const chartjsDocs = `# Chart.js v4 Quick Reference
+			const chartjsDocs = `# Chart.js v3.9.1 Quick Reference
 
-## Essential Chart Types & Configuration
+## Essential Setup & Configuration
 
-### 1. Bar Chart
+### Container Setup (IMPORTANT)
+\`\`\`html
+<!-- Always wrap canvas in a container with defined height -->
+<div class="chart-container" style="position: relative; height: 400px;">
+    <canvas id="myChart"></canvas>
+</div>
+\`\`\`
+
+### Basic Chart Initialization
 \`\`\`javascript
+// Always get 2D context
+const ctx = document.getElementById('myChart').getContext('2d');
+const chart = new Chart(ctx, config);
+\`\`\`
+
+## Chart Types with Theme Support
+
+### 1. Bar Chart with Dark/Light Theme
+\`\`\`javascript
+// Theme-aware colors
+const isDarkTheme = true; // or detect from user selection
+const colors = {
+    grid: isDarkTheme ? '#333' : '#e0e0e0',
+    text: isDarkTheme ? '#888' : '#666',
+    primary: '#4ECDC4',
+    secondary: '#6B46C1'
+};
+
 new Chart(ctx, {
     type: 'bar',
     data: {
@@ -336,25 +362,41 @@ new Chart(ctx, {
         datasets: [{
             label: 'Sales',
             data: [12, 19, 3],
-            backgroundColor: '#4ECDC4',
-            borderColor: '#6B46C1',
+            backgroundColor: colors.primary,
+            borderColor: colors.secondary,
             borderWidth: 1
         }]
     },
     options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-            legend: { position: 'top' },
-            title: { display: true, text: 'Sales Chart' }
+            legend: { 
+                position: 'top',
+                labels: { color: colors.text }
+            },
+            title: { 
+                display: true, 
+                text: 'Sales Chart',
+                color: colors.text
+            }
         },
         scales: {
-            y: { beginAtZero: true }
+            y: { 
+                beginAtZero: true,
+                grid: { color: colors.grid },
+                ticks: { color: colors.text }
+            },
+            x: {
+                grid: { color: colors.grid },
+                ticks: { color: colors.text }
+            }
         }
     }
 });
 \`\`\`
 
-### 2. Line Chart
+### 2. Line Chart with Theme Support
 \`\`\`javascript
 new Chart(ctx, {
     type: 'line',
@@ -363,21 +405,35 @@ new Chart(ctx, {
         datasets: [{
             label: 'Trend',
             data: [65, 59, 80],
-            borderColor: '#6B46C1',
-            backgroundColor: 'rgba(107, 70, 193, 0.1)',
+            borderColor: colors.secondary,
+            backgroundColor: isDarkTheme ? 'rgba(107, 70, 193, 0.1)' : 'rgba(107, 70, 193, 0.05)',
             tension: 0.1
         }]
     },
     options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-            legend: { position: 'top' }
+            legend: { 
+                position: 'top',
+                labels: { color: colors.text }
+            }
+        },
+        scales: {
+            y: {
+                grid: { color: colors.grid },
+                ticks: { color: colors.text }
+            },
+            x: {
+                grid: { color: colors.grid },
+                ticks: { color: colors.text }
+            }
         }
     }
 });
 \`\`\`
 
-### 3. Pie/Doughnut Chart
+### 3. Doughnut Chart (No scales needed)
 \`\`\`javascript
 new Chart(ctx, {
     type: 'doughnut',
@@ -385,26 +441,102 @@ new Chart(ctx, {
         labels: ['Category A', 'Category B', 'Category C'],
         datasets: [{
             data: [30, 50, 20],
-            backgroundColor: ['#4ECDC4', '#6B46C1', '#FFE66D']
+            backgroundColor: ['#4ECDC4', '#6B46C1', '#FFE66D'],
+            borderColor: isDarkTheme ? '#1a1a1a' : '#ffffff',
+            borderWidth: 2
         }]
     },
     options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-            legend: { position: 'right' }
+            legend: { 
+                position: 'right',
+                labels: { color: colors.text }
+            },
+            title: {
+                display: true,
+                text: 'Distribution',
+                color: colors.text
+            }
+        }
+        // Note: No scales for doughnut/pie charts
+    }
+});
+\`\`\`
+
+### 4. Multiple Datasets Bar Chart
+\`\`\`javascript
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+        datasets: [{
+            label: 'Product A',
+            data: [12, 19, 3, 5],
+            backgroundColor: '#4ECDC4'
+        }, {
+            label: 'Product B',
+            data: [7, 11, 5, 8],
+            backgroundColor: '#6B46C1'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { 
+                position: 'top',
+                labels: { color: colors.text }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: { color: colors.grid },
+                ticks: { color: colors.text }
+            },
+            x: {
+                grid: { color: colors.grid },
+                ticks: { color: colors.text }
+            }
         }
     }
 });
 \`\`\`
 
-## Safe Data Access Patterns
+## Real-World Data Patterns
 
-### Always Check Data Context
+### Data Transformation from API
+\`\`\`javascript
+// Transform BigQuery results for Chart.js
+const transformData = (queryResults) => {
+    // Validate data first
+    if (!queryResults.rows || queryResults.rows.length === 0) {
+        return {
+            labels: ['No Data'],
+            datasets: [{ data: [0], backgroundColor: '#ccc' }]
+        };
+    }
+    
+    // Map data safely with fallbacks
+    return {
+        labels: queryResults.rows.map(row => row.label || 'Unknown'),
+        datasets: [{
+            label: 'Values',
+            data: queryResults.rows.map(row => row.value || 0),
+            backgroundColor: colors.primary
+        }]
+    };
+};
+\`\`\`
+
+### Safe Context Access for Dynamic Styling
 \`\`\`javascript
 // For dynamic colors based on data values
 backgroundColor: function(context) {
     // ALWAYS check if parsed exists
-    if (!context.parsed) return '#4ECDC4';
+    if (!context.parsed) return colors.primary;
     
     const value = context.parsed.y || context.parsed;
     if (value > 100) return '#4CAF50';
@@ -480,11 +612,13 @@ function createChart(data) {
 }
 \`\`\`
 
-### 3. Handle Async Data Loading
+### 3. Complete Async Data Loading Pattern
 \`\`\`javascript
-async function loadChartData() {
+async function loadChartData(chartId, query) {
+    const ctx = document.getElementById(chartId).getContext('2d');
+    
     // Show loading state
-    const loadingChart = new Chart(ctx, {
+    const chart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: ['Loading...'],
@@ -493,24 +627,92 @@ async function loadChartData() {
                 data: [0],
                 backgroundColor: '#ccc'
             }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
         }
     });
     
     try {
-        const data = await fetchBigQueryData(query);
+        const response = await fetch('https://fast-api-165560968031.europe-west3.run.app/bigquery/execute_query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query, limit: 100 })
+        });
         
-        // Update with real data
-        loadingChart.data.labels = data.labels;
-        loadingChart.data.datasets[0].data = data.values;
-        loadingChart.data.datasets[0].backgroundColor = '#4ECDC4';
-        loadingChart.update('active');
+        if (!response.ok) throw new Error('API request failed');
+        
+        const data = await response.json();
+        
+        // Transform and update chart
+        const transformed = transformData(data);
+        chart.data = transformed;
+        chart.options.plugins.legend.display = true;
+        chart.update('active'); // Smooth animation
+        
     } catch (error) {
         // Show error state
-        loadingChart.data.labels = ['Error'];
-        loadingChart.data.datasets[0].label = 'Failed to load data';
-        loadingChart.update();
+        chart.data.labels = ['Error Loading Data'];
+        chart.data.datasets[0] = {
+            label: error.message,
+            data: [0],
+            backgroundColor: '#f44336'
+        };
+        chart.update();
     }
 }
+\`\`\`
+
+## Complete Dashboard Example
+
+### Full HTML Structure with Dark Theme
+\`\`\`html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BigQuery Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 30px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #4ECDC4;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1>Analytics Dashboard</h1>
+        <div class="chart-container">
+            <canvas id="mainChart"></canvas>
+        </div>
+    </div>
+    <script>
+        // Your chart code here
+    </script>
+</body>
+</html>
 \`\`\`
 
 ## Advanced Features
