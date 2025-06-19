@@ -108,119 +108,6 @@ export class MyMCP extends McpAgent {
 			}
 		});
 
-		// Validate and serve dashboard HTML
-		this.server.tool("validate_dashboard", "Validate and prepare dashboard HTML for deployment. This tool checks for common errors and returns a corrected version.", {
-			html_content: z.string().describe("The complete HTML content of the dashboard including all scripts and styles"),
-			theme: z.enum(["light", "dark"]).describe("The theme selected by the user"),
-			auto_fix: z.boolean().optional().default(true).describe("Automatically fix common errors")
-		}, async ({ html_content, theme, auto_fix }) => {
-			try {
-				let validatedHtml = html_content;
-				const errors: string[] = [];
-				const warnings: string[] = [];
-				const fixes: string[] = [];
-
-				// Check for Chart.js library inclusion
-				if (!validatedHtml.includes('chart.js') && !validatedHtml.includes('Chart.min.js')) {
-					errors.push("Chart.js library not included");
-					if (auto_fix) {
-						validatedHtml = validatedHtml.replace('</head>', 
-							'<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>\n</head>');
-						fixes.push("Added Chart.js CDN link");
-					}
-				}
-
-				// Check for proper canvas elements
-				const canvasMatches = validatedHtml.match(/<canvas[^>]*>/g) || [];
-				if (canvasMatches.length === 0) {
-					errors.push("No canvas elements found for charts");
-				}
-
-				// Check for syntax errors in JavaScript
-				const scriptMatches = validatedHtml.match(/<script[^>]*>([\s\S]*?)<\/script>/g) || [];
-				scriptMatches.forEach((script, index) => {
-					// Extract script content
-					const scriptContent = script.replace(/<script[^>]*>|<\/script>/g, '');
-					
-					// Check for common syntax errors
-					if (scriptContent.includes('catch') && !scriptContent.includes('try')) {
-						errors.push(`Script ${index + 1}: 'catch' without 'try' block`);
-					}
-					
-					// Check for undefined context.parsed usage
-					if (scriptContent.includes('context.parsed') && !scriptContent.includes('context.parsed')) {
-						warnings.push(`Script ${index + 1}: Using context.parsed without checking if it exists`);
-						if (auto_fix) {
-							const fixedScript = scriptContent.replace(
-								/context\.parsed\.(\w+)/g,
-								'(context.parsed ? context.parsed.$1 : 0)'
-							);
-							validatedHtml = validatedHtml.replace(scriptContent, fixedScript);
-							fixes.push(`Added safety checks for context.parsed in script ${index + 1}`);
-						}
-					}
-
-					// Check for Chart destruction before recreation
-					if (scriptContent.includes('new Chart') && !scriptContent.includes('.destroy()')) {
-						warnings.push(`Script ${index + 1}: Creating chart without destroying previous instance`);
-					}
-				});
-
-				// Apply theme-specific fixes
-				if (theme === "dark" && !validatedHtml.includes('background-color')) {
-					if (auto_fix) {
-						validatedHtml = validatedHtml.replace('<style>', '<style>\nbody { background-color: #1a1a1a; color: #ffffff; }\n');
-						fixes.push("Added dark theme background styles");
-					}
-				}
-
-				// Check for company colors
-				if (!validatedHtml.includes('#4ECDC4') && !validatedHtml.includes('#6B46C1')) {
-					warnings.push("Company colors not found in dashboard");
-				}
-
-				// Validate HTML structure
-				if (!validatedHtml.includes('<!DOCTYPE html>')) {
-					if (auto_fix) {
-						validatedHtml = '<!DOCTYPE html>\n' + validatedHtml;
-						fixes.push("Added DOCTYPE declaration");
-					}
-				}
-
-				// Generate validation report
-				const report = {
-					valid: errors.length === 0,
-					errors: errors,
-					warnings: warnings,
-					fixes: fixes,
-					theme: theme,
-					has_charts: canvasMatches.length > 0,
-					canvas_count: canvasMatches.length
-				};
-
-				// Create response
-				const response = {
-					validation_report: report,
-					validated_html: auto_fix ? validatedHtml : html_content,
-					ready_to_deploy: errors.length === 0
-				};
-
-				return {
-					content: [{
-						type: "text",
-						text: JSON.stringify(response, null, 2)
-					}],
-				};
-			} catch (error) {
-				return {
-					content: [{
-						type: "text",
-						text: `Validation failed: ${error instanceof Error ? error.message : String(error)}`
-					}],
-				};
-			}
-		});
-
 		// BI Analyst & Dashboard Builder prompt
 		this.server.prompt("BI Analyst & Dashboard Builder", "Data analysis assistant for BigQuery queries and dashboard creation", {
 		}, async ({}) => {
@@ -266,12 +153,12 @@ When users request a dashboard:
 1. Ask the user to choose between light or dark theme. Dont continue without a theme selection.
 2. ALWAYS consult the chartjs_docs resource for error-free Chart.js patterns before creating charts
 3. Use the company color palette: Primary #4ECDC4 (teal), Secondary #6B46C1 (purple)
-4. Create responsive HTML dashboards with Chart.js for visualizations
-5. Include interactive filters and drill-down capabilities where appropriate
-6. Ensure accessibility and mobile-friendly design
-7. Integrate live BigQuery data using the FastAPI endpoint for real-time updates
-8. ALWAYS use the validate_dashboard tool to check your HTML before presenting it to the user
-9. If validation errors are found, fix them and re-validate until the dashboard passes all checks
+4. Create complete, self-contained HTML files with embedded CSS and JavaScript
+5. Include Chart.js from CDN: https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js
+6. Ensure all code is production-ready with proper error handling
+7. Include interactive filters and drill-down capabilities where appropriate
+8. Integrate live BigQuery data using the FastAPI endpoint for real-time updates
+9. Provide the complete HTML file as a single code block that users can save and open directly
 
 **Chart.js Best Practices & Error Prevention:**
 IMPORTANT: Avoid common Chart.js initialization errors by following these patterns:
