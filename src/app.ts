@@ -1,107 +1,55 @@
 import { Hono } from "hono";
-import {
-	layout,
-	homeContent,
-	parseApproveFormBody,
-	renderAuthorizationRejectedContent,
-	renderAuthorizationApprovedContent,
-	renderLoggedInAuthorizeScreen,
-	renderLoggedOutAuthorizeScreen,
-} from "./utils";
-import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
 
-export type Bindings = Env & {
-	OAUTH_PROVIDER: OAuthHelpers;
-};
+const FASTAPI_BASE_URL = "https://fast-api-165560968031.europe-west3.run.app";
 
-const app = new Hono<{
-	Bindings: Bindings;
-}>();
+const app = new Hono();
 
-// Render a basic homepage placeholder to make sure the app is up
-app.get("/", async (c) => {
-	const content = await homeContent(c.req.raw);
-	return c.html(layout(content, "MCP Remote Auth Demo - Home"));
-});
+// Simple home page
+app.get("/", (c) => {
+	return c.html(`
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<title>MLCD MCP Server</title>
+			<style>
+				body { font-family: Arial, sans-serif; margin: 40px; }
+				.container { max-width: 800px; margin: 0 auto; }
+				.endpoint { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+				.status { color: #28a745; font-weight: bold; }
+			</style>
+		</head>
+		<body>
+			<div class="container">
+				<h1>MLCD MCP Server</h1>
+				<p class="status">✓ FastAPI Proxy MCP Server - No Authentication Required</p>
+				
+				<h2>Connection Information</h2>
+				<div class="endpoint">
+					<strong>MCP Endpoint:</strong> <code>https://your-worker-url.workers.dev/sse</code><br>
+					<em>Connect your Claude Desktop to this endpoint</em>
+				</div>
+				
+				<div class="endpoint">
+					<strong>FastAPI Backend:</strong> <code>${FASTAPI_BASE_URL}</code><br>
+					<em>Target API server being proxied</em>
+				</div>
 
-// Render an authorization page
-// If the user is logged in, we'll show a form to approve the appropriate scopes
-// If the user is not logged in, we'll show a form to both login and approve the scopes
-app.get("/authorize", async (c) => {
-	// We don't have an actual auth system, so to demonstrate both paths, you can
-	// hard-code whether the user is logged in or not. We'll default to true
-	// const isLoggedIn = false;
-	const isLoggedIn = true;
+				<h2>Available Tools</h2>
+				<ul>
+					<li><strong>get_schema</strong> - Get BigQuery dataset/table schema information</li>
+				</ul>
 
-	const oauthReqInfo = await c.env.OAUTH_PROVIDER.parseAuthRequest(c.req.raw);
+				<h2>Available Resources</h2>
+				<ul>
+					<li><strong>bigquery_catalog</strong> - List of available BigQuery datasets and tables</li>
+				</ul>
 
-	const oauthScopes = [
-		{
-			name: "read_profile",
-			description: "Read your basic profile information",
-		},
-		{ name: "read_data", description: "Access your stored data" },
-		{ name: "write_data", description: "Create and modify your data" },
-	];
-
-	if (isLoggedIn) {
-		const content = await renderLoggedInAuthorizeScreen(oauthScopes, oauthReqInfo);
-		return c.html(layout(content, "MCP Remote Auth Demo - Authorization"));
-	}
-
-	const content = await renderLoggedOutAuthorizeScreen(oauthScopes, oauthReqInfo);
-	return c.html(layout(content, "MCP Remote Auth Demo - Authorization"));
-});
-
-// The /authorize page has a form that will POST to /approve
-// This endpoint is responsible for validating any login information and
-// then completing the authorization request with the OAUTH_PROVIDER
-app.post("/approve", async (c) => {
-	const { action, oauthReqInfo, email, password } = await parseApproveFormBody(
-		await c.req.parseBody(),
-	);
-
-	if (!oauthReqInfo) {
-		return c.html("INVALID LOGIN", 401);
-	}
-
-	// If the user needs to both login and approve, we should validate the login first
-	if (action === "login_approve") {
-		// We'll allow any values for email and password for this demo
-		// but you could validate them here
-		// Ex:
-		// if (email !== "user@example.com" || password !== "password") {
-		// biome-ignore lint/correctness/noConstantCondition: This is a demo
-		if (false) {
-			return c.html(
-				layout(
-					await renderAuthorizationRejectedContent("/"),
-					"MCP Remote Auth Demo - Authorization Status",
-				),
-			);
-		}
-	}
-
-	// The user must be successfully logged in and have approved the scopes, so we
-	// can complete the authorization request
-	const { redirectTo } = await c.env.OAUTH_PROVIDER.completeAuthorization({
-		request: oauthReqInfo,
-		userId: email,
-		metadata: {
-			label: "Test User",
-		},
-		scope: oauthReqInfo.scope,
-		props: {
-			userEmail: email,
-		},
-	});
-
-	return c.html(
-		layout(
-			await renderAuthorizationApprovedContent(redirectTo),
-			"MCP Remote Auth Demo - Authorization Status",
-		),
-	);
+				<h2>Usage</h2>
+				<p>This MCP server acts as a proxy to your FastAPI backend. Add the MCP endpoint above to your Claude Desktop configuration to access your FastAPI endpoints through the MCP protocol.</p>
+			</div>
+		</body>
+		</html>
+	`);
 });
 
 export default app;

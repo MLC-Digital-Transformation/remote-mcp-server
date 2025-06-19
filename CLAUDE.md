@@ -4,7 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Remote MCP Server Overview
 
-This is a Remote MCP (Model Context Protocol) Server deployed on Cloudflare Workers that acts as a proxy to a FastAPI backend application. It enables Claude Desktop and other MCP clients to connect to FastAPI endpoints through the MCP protocol over HTTP/SSE.
+This is a simplified Remote MCP (Model Context Protocol) Server deployed on Cloudflare Workers that acts as a proxy to a FastAPI backend application. It enables Claude Desktop and other MCP clients to connect to FastAPI endpoints through the MCP protocol over HTTP/SSE without authentication.
+
+## Key Features
+
+- **No Authentication Required** - Direct connection without OAuth prompts
+- **FastAPI Proxy** - Routes MCP calls to your FastAPI backend
+- **Simple Setup** - Just connect to the `/sse` endpoint
+- **Auto-Discovery** - Automatically discovers FastAPI endpoints via OpenAPI
 
 ## FastAPI Integration
 
@@ -15,6 +22,12 @@ The MCP server provides the following proxy capabilities:
 - Generic API calls to any FastAPI endpoint
 - Automatic OpenAPI documentation retrieval
 - Resource access to API endpoints and server information
+
+## Connection
+
+**MCP Endpoint**: `https://your-worker-url.workers.dev/sse`
+
+No authentication is required - just add this URL to your Claude Desktop configuration.
 
 ## Adding New MCP Features
 
@@ -111,15 +124,13 @@ The current implementation provides these tools and resources:
 
 ### Available Tools
 
-1. **health_check** - Check if the FastAPI server is running
-2. **api_call** - Make generic API calls to any FastAPI endpoint
-   - Parameters: `endpoint` (string), `method` (GET/POST/PUT/DELETE), `body` (optional)
-3. **get_api_docs** - Retrieve FastAPI documentation or OpenAPI spec
+1. **get_schema** - Get BigQuery dataset/table schema information
+   - Parameters: `dataset_id` (optional string), `table_name` (optional string)
 
 ### Available Resources
 
-1. **fastapi_info** (`fastapi://info`) - Server configuration and basic info
-2. **api_endpoints** (`fastapi://endpoints`) - List of available API endpoints from OpenAPI spec
+1. **bigquery_catalog** (`bigquery://catalog`) - List of available BigQuery datasets and tables
+   - Endpoint: `/bigquery/list_datasets_tables`
 
 ### FastAPI Proxy Helper
 

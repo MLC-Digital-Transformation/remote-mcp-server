@@ -22,12 +22,6 @@
 			}
 		]
 	},
-	"kv_namespaces": [
-		{
-			"binding": "OAUTH_KV",
-			"id": "f4acca46b7294e7baa9644c90c1d7c77"
-		}
-	],
 	"observability": {
 		"enabled": true
 	},

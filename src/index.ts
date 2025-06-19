@@ -1,8 +1,6 @@
-import app from "./app";
 import { McpAgent } from "agents/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import OAuthProvider from "@cloudflare/workers-oauth-provider";
 
 const FASTAPI_BASE_URL = "https://fast-api-165560968031.europe-west3.run.app";
 
@@ -40,109 +38,61 @@ export class MyMCP extends McpAgent {
 	}
 
 	async init() {
-		// Health check tool
-		this.server.tool("health_check", {}, async () => {
+		// Get BigQuery schema
+		this.server.tool("get_schema", {
+			dataset_id: z.string().optional().describe("BigQuery dataset ID (optional)"),
+			table_name: z.string().optional().describe("BigQuery table name (optional)")
+		}, async ({ dataset_id, table_name }) => {
 			try {
-				const result = await this.callFastAPI("/health");
-				return {
-					content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-				};
-			} catch (error) {
-				return {
-					content: [{ type: "text", text: `Health check failed: ${error instanceof Error ? error.message : String(error)}` }],
-				};
-			}
-		});
-
-		// Generic API call tool
-		this.server.tool("api_call", {
-			endpoint: z.string().describe("API endpoint path (e.g., /users, /data)"),
-			method: z.enum(["GET", "POST", "PUT", "DELETE"]).optional().default("GET"),
-			body: z.any().optional().describe("Request body for POST/PUT requests")
-		}, async ({ endpoint, method, body }) => {
-			try {
-				const result = await this.callFastAPI(endpoint, method, body);
-				return {
-					content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-				};
-			} catch (error) {
-				return {
-					content: [{ type: "text", text: `API call failed: ${error instanceof Error ? error.message : String(error)}` }],
-				};
-			}
-		});
-
-		// Get API documentation
-		this.server.tool("get_api_docs", {}, async () => {
-			try {
-				const result = await this.callFastAPI("/docs");
-				return {
-					content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-				};
-			} catch (error) {
-				// Try OpenAPI spec endpoint
-				try {
-					const openapi = await this.callFastAPI("/openapi.json");
-					return {
-						content: [{ type: "text", text: JSON.stringify(openapi, null, 2) }],
-					};
-				} catch (openApiError) {
-					return {
-						content: [{ type: "text", text: `Documentation not available: ${error instanceof Error ? error.message : String(error)}` }],
-					};
+				let endpoint = "/bigquery/get_schema";
+				const params = new URLSearchParams();
+				
+				if (dataset_id) {
+					params.append("dataset_id", dataset_id);
 				}
+				if (table_name) {
+					params.append("table_name", table_name);
+				}
+				
+				if (params.toString()) {
+					endpoint += `?${params.toString()}`;
+				}
+				
+				const result = await this.callFastAPI(endpoint);
+				return {
+					content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+				};
+			} catch (error) {
+				return {
+					content: [{ type: "text", text: `Failed to get schema: ${error instanceof Error ? error.message : String(error)}` }],
+				};
 			}
 		});
 
-		// FastAPI info resource
-		this.server.resource("fastapi_info", "fastapi://info", {
+		// BigQuery datasets and tables resource
+		this.server.resource("bigquery_catalog", "bigquery://catalog", {
 			mimeType: "application/json",
-			description: "FastAPI server information and configuration"
-		}, async () => ({
-			contents: [{
-				uri: "fastapi://info",
-				mimeType: "application/json",
-				text: JSON.stringify({
-					baseUrl: FASTAPI_BASE_URL,
-					description: "FastAPI proxy server",
-					endpoints: {
-						health: "/health",
-						docs: "/docs", 
-						openapi: "/openapi.json"
-					}
-				}, null, 2),
-			}],
-		}));
-
-		// API endpoints resource
-		this.server.resource("api_endpoints", "fastapi://endpoints", {
-			mimeType: "application/json",
-			description: "Available API endpoints from FastAPI server"
+			description: "Available BigQuery datasets and tables"
 		}, async () => {
 			try {
-				const openapi = await this.callFastAPI("/openapi.json");
-				const paths = Object.keys((openapi as any)?.paths || {});
+				// Call your FastAPI endpoint that lists datasets/tables
+				const result = await this.callFastAPI("/bigquery/list_datasets_tables");
 				
 				return {
 					contents: [{
-						uri: "fastapi://endpoints",
+						uri: "bigquery://catalog",
 						mimeType: "application/json",
-						text: JSON.stringify({
-							baseUrl: FASTAPI_BASE_URL,
-							endpoints: paths,
-							fullSpec: openapi
-						}, null, 2),
+						text: JSON.stringify(result, null, 2),
 					}],
 				};
 			} catch (error) {
 				return {
 					contents: [{
-						uri: "fastapi://endpoints",
+						uri: "bigquery://catalog",
 						mimeType: "application/json",
 						text: JSON.stringify({
-							error: "Could not fetch API endpoints",
+							error: "Could not fetch BigQuery catalog",
 							message: error instanceof Error ? error.message : String(error),
-							baseUrl: FASTAPI_BASE_URL
 						}, null, 2),
 					}],
 				};
@@ -151,15 +101,5 @@ export class MyMCP extends McpAgent {
 	}
 }
 
-// Export the OAuth handler as the default
-export default new OAuthProvider({
-	apiRoute: "/sse",
-	// TODO: fix these types
-	// @ts-expect-error
-	apiHandler: MyMCP.mount("/sse"),
-	// @ts-expect-error
-	defaultHandler: app,
-	authorizeEndpoint: "/authorize",
-	tokenEndpoint: "/token",
-	clientRegistrationEndpoint: "/register",
-});
+// Export the MCP agent directly mounted at /sse
+export default MyMCP.mount("/sse");
