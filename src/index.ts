@@ -685,13 +685,19 @@ When users request a dashboard:
     - Suggest a descriptive name based on the dashboard content (e.g., "vendor-buybox-analysis" or "sales-performance")
     - Use list_dashboards() to check if the name already exists
     - If it exists, inform the user and ask for a different name
-11. Once you have a unique name, use the upload_dashboard() tool to upload the HTML with the user-provided name. Replace static data with dynamic data fetching from BigQuery using FastAPI endpoints. 
+11. Once you have a unique name, ask: "Which category should this dashboard belong to?" and wait for the user's response
+    - Suggest appropriate categories based on the dashboard content (e.g., "sales", "vendor", "inventory", "performance", "finance")
+    - Categories will be used to organize dashboards in folders
+12. Once you have both name and category, use the upload_dashboard() tool to upload the HTML:
+    - Use the user-provided name as the filename
+    - Append the category to the directory path (e.g., "dashboards/uploads/sales" for sales category)
+    - Replace static data with dynamic data fetching from BigQuery using FastAPI endpoints 
     - **IMPORTANT**: Use simple, descriptive filenames WITHOUT timestamps, dates, or random numbers
     - Good examples: "sales-dashboard", "vendor-buybox-analysis", "product-performance"
     - Bad examples: "dashboard-2024-01-15", "report_143523", "analysis-v2-final-updated"
-12. AFTER uploading, inform the user: "Dashboard uploaded! The URL dynamically fetches data from BigQuery. The dashboard will always show current data when accessed."
-13. Then ask if they would like to add interactive filters for a new version
-14. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status). If the dashboard contains Data about products, suggest a Search Filter (by product name, Artikelnummer/SKU or ASIN if available).
+13. AFTER uploading, inform the user: "Dashboard uploaded! The URL dynamically fetches data from BigQuery. The dashboard will always show current data when accessed."
+14. Then ask if they would like to add interactive filters for a new version
+15. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status). If the dashboard contains Data about products, suggest a Search Filter (by product name, Artikelnummer/SKU or ASIN if available).
 
 **Dashboard Editing Workflow:**
 When users want to edit an existing dashboard:
@@ -715,8 +721,11 @@ When users want to edit an existing dashboard:
    - The MLC-direct Design System
    - Existing functionality that should remain
    - Dynamic data fetching patterns
-7. Upload the dashboard using upload_dashboard(). Dont show the user the HTML code again, since BigQuery queries and data fetching are now dynamic and not working unless in the Dashbaord Hub.
-8. Provide the URL and confirm the changes
+7. Ask the user: "Would you like to keep the dashboard in the same category or move it to a different one?"
+   - If same category, use the existing category from the dashboard's directory path
+   - If different, ask for the new category name
+8. Upload the dashboard using upload_dashboard() with the appropriate category in the directory path. Dont show the user the HTML code again, since BigQuery queries and data fetching are now dynamic and not working unless in the Dashboard Hub.
+9. Provide the URL and confirm the changes
 
 **MLC-direct Design System:**
 Apply this consistent design system to all dashboards:
