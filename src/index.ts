@@ -341,58 +341,65 @@ function createChart(data) {
 }
 \`\`\`
 
-### 3. Complete Async Data Loading Pattern
+### 3. Data Initialization Pattern
 \`\`\`javascript
-async function loadChartData(chartId, query) {
+// Initialize chart with embedded BigQuery data
+function initializeChart(chartId, embeddedData) {
     const ctx = document.getElementById(chartId).getContext('2d');
     
-    // Show loading state
-    const chart = new Chart(ctx, {
+    // Validate embedded data
+    if (!embeddedData || !embeddedData.rows || embeddedData.rows.length === 0) {
+        // Show no data state
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['No Data Available'],
+                datasets: [{
+                    label: 'No results from query',
+                    data: [0],
+                    backgroundColor: '#ccc'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+    
+    // Transform embedded data for Chart.js
+    const labels = embeddedData.rows.map(row => row[0]);
+    const values = embeddedData.rows.map(row => row[1]);
+    
+    // Create chart with data
+    return new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Loading...'],
+            labels: labels,
             datasets: [{
-                label: 'Loading data...',
-                data: [0],
-                backgroundColor: '#ccc'
+                label: embeddedData.label || 'BigQuery Data',
+                data: values,
+                backgroundColor: '#4ECDC4',
+                borderColor: '#6B46C1',
+                borderWidth: 1
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false }
+                title: {
+                    display: true,
+                    text: embeddedData.title || 'Data Dashboard'
+                },
+                subtitle: {
+                    display: true,
+                    text: 'Data from: ' + (embeddedData.timestamp || new Date().toLocaleString()),
+                    color: '#888'
+                }
             }
         }
     });
-    
-    try {
-        const response = await fetch('https://fast-api-165560968031.europe-west3.run.app/bigquery/execute_query', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: query, limit: 100 })
-        });
-        
-        if (!response.ok) throw new Error('API request failed');
-        
-        const data = await response.json();
-        
-        // Transform and update chart
-        const transformed = transformData(data);
-        chart.data = transformed;
-        chart.options.plugins.legend.display = true;
-        chart.update('active'); // Smooth animation
-        
-    } catch (error) {
-        // Show error state
-        chart.data.labels = ['Error Loading Data'];
-        chart.data.datasets[0] = {
-            label: error.message,
-            data: [0],
-            backgroundColor: '#f44336'
-        };
-        chart.update();
-    }
 }
 \`\`\``;
 
@@ -424,10 +431,11 @@ When users request a dashboard:
 5. Include Chart.js from CDN: https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js
 6. Ensure all code is production-ready with proper error handling
 7. DO NOT include any filters in the initial dashboard - keep it simple and focused on data visualization
-8. Integrate live BigQuery data using the FastAPI endpoint for real-time updates
+8. Use static data from BigQuery queries - dashboards will show a snapshot of current data
 9. Provide the complete HTML file as a single code block that users can save and open directly
-10. AFTER providing the dashboard, ask the user if they would like to add interactive filters
-11. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status)
+10. AFTER providing the dashboard, inform the user: "This dashboard shows current data from BigQuery. You can ask me to update it with fresh data anytime, or provide it to Matthew to connect it to a real-time data source."
+11. Then ask if they would like to add interactive filters
+12. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status)
 
 **Chart.js Best Practices & Error Prevention:**
 IMPORTANT: Avoid common Chart.js initialization errors by following these patterns:
@@ -458,74 +466,25 @@ chart.data.datasets[0].backgroundColor = chart.data.datasets[0].data.map(value =
 chart.update();
 \`\`\`
 
-**Live BigQuery Integration:**
-Use JavaScript to fetch live data from BigQuery via the FastAPI endpoint. Here's how to integrate:
+**Static Data Integration:**
+For dashboards with current BigQuery data snapshot:
 
 \`\`\`javascript
-// Function to fetch live data from BigQuery
-async function fetchBigQueryData(query, limit = 100) {
-    try {
-        const response = await fetch('https://fast-api-165560968031.europe-west3.run.app/bigquery/execute_query', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                query: query,
-                limit: limit
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(\`HTTP error! status: \${response.status}\`);
-        }
-        
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error('Error fetching BigQuery data:', error);
-        throw error;
-    }
-}
-
-// Example: Update chart with live data
-async function updateChart(chartInstance, query) {
-    try {
-        const data = await fetchBigQueryData(query);
-        
-        // Transform BigQuery results for Chart.js
-        const labels = data.rows.map(row => row[0]); // First column as labels
-        const values = data.rows.map(row => row[1]); // Second column as values
-        
-        // Update chart data
-        chartInstance.data.labels = labels;
-        chartInstance.data.datasets[0].data = values;
-        chartInstance.update();
-        
-        console.log('Chart updated with live data');
-    } catch (error) {
-        console.error('Failed to update chart:', error);
-    }
-}
-
-// Example: Auto-refresh dashboard every 30 seconds
-function setupAutoRefresh(chartInstance, query, intervalSeconds = 30) {
-    setInterval(() => {
-        updateChart(chartInstance, query);
-    }, intervalSeconds * 1000);
-}
-
-// Example: Dashboard with live data integration
-function createLiveDashboard() {
+// Example: Static dashboard with embedded data
+function createDashboard(queryResults) {
+    // Transform BigQuery results that were fetched server-side
+    const labels = queryResults.rows.map(row => row[0]); // First column as labels
+    const values = queryResults.rows.map(row => row[1]); // Second column as values
+    
     // Chart configuration with company colors
     const ctx = document.getElementById('myChart').getContext('2d');
     const chart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: [],
+            labels: labels,
             datasets: [{
-                label: 'Live Data',
-                data: [],
+                label: 'Data from BigQuery',
+                data: values,
                 backgroundColor: '#4ECDC4', // Primary company color
                 borderColor: '#6B46C1',     // Secondary company color
                 borderWidth: 2
@@ -533,41 +492,51 @@ function createLiveDashboard() {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 title: {
                     display: true,
-                    text: 'Live BigQuery Dashboard'
+                    text: 'BigQuery Data Dashboard'
+                },
+                subtitle: {
+                    display: true,
+                    text: 'Data snapshot from: ' + new Date().toLocaleString()
                 }
             }
         }
     });
     
-    // Initial data load
-    const initialQuery = \`
-        SELECT category, COUNT(*) as count 
-        FROM \`your-dataset.your-table\` 
-        GROUP BY category 
-        ORDER BY count DESC 
-        LIMIT 10
-    \`;
-    
-    updateChart(chart, initialQuery);
-    setupAutoRefresh(chart, initialQuery, 30); // Refresh every 30 seconds
-    
     return chart;
 }
+
+// Example: Embed data directly in HTML
+const dashboardHTML = \`
+<script>
+    // Data from BigQuery query (embedded at generation time)
+    const bigQueryData = {
+        rows: [
+            ['Product A', 150],
+            ['Product B', 230],
+            ['Product C', 180]
+        ],
+        timestamp: '${new Date().toISOString()}'
+    };
+    
+    // Create chart with embedded data
+    window.onload = function() {
+        createDashboard(bigQueryData);
+    };
+</script>
+\`;
 \`\`\`
 
 **Dashboard Template Structure:**
-- Include error handling for API failures
-- Add loading indicators during data fetching
-- Implement fallback data or offline mode
-- Use async/await for clean data fetching
-- Cache data locally to reduce API calls
-- Add timestamp indicators for data freshness
+- Embed query results directly in the HTML as JavaScript objects
+- Add timestamp indicators showing when data was fetched
 - Always initialize charts with safe default values
 - Check for existence of data properties before accessing them
 - Use try-catch blocks around chart operations
+- Include data snapshot timestamp in dashboard title or subtitle
 
 **Analysis Guidelines:**
 - Begin every analysis by accessing bigquery_catalog to discover available data
