@@ -59,8 +59,8 @@ export class MyMCP extends McpAgent {
 		});
 
 		// Get BigQuery schema
-		this.server.tool("get_schema", {
-			dataset_with_table: z.string().describe("Dataset and table name in format 'dataset.table' (e.g., 'products.Produkt')"),
+		this.server.tool("get_schema_table_view", {
+			dataset_with_table: z.string().describe("Dataset and table/view name in format 'dataset.table' (e.g., 'products.Produkt')"),
 			include_description: z.boolean().optional().default(true).describe("Include column descriptions in the schema")
 		}, async ({ dataset_with_table, include_description }) => {
 			try {
@@ -84,35 +84,10 @@ export class MyMCP extends McpAgent {
 			}
 		});
 
-		// Get BigQuery view schema
-		this.server.tool("get_view_schema", {
-			dataset_with_view: z.string().describe("Dataset and view name in format 'dataset.view' (e.g., 'analytics.sales_summary')"),
-			include_description: z.boolean().optional().default(true).describe("Include column descriptions in the view schema")
-		}, async ({ dataset_with_view, include_description }) => {
-			try {
-				const endpoint = `/bigquery/view_schema/${dataset_with_view}`;
-				const params = new URLSearchParams();
-				
-				if (include_description !== undefined) {
-					params.append("include_description", include_description.toString());
-				}
-				
-				const fullEndpoint = params.toString() ? `${endpoint}?${params.toString()}` : endpoint;
-				
-				const result = await this.callFastAPI(fullEndpoint);
-				return {
-					content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-				};
-			} catch (error) {
-				return {
-					content: [{ type: "text", text: `Failed to get view schema: ${error instanceof Error ? error.message : String(error)}` }],
-				};
-			}
-		});
 
 		// Execute BigQuery query (SELECT only)
 		this.server.tool("execute_query", {
-			query: z.string().describe("BigQuery SQL query to execute (SELECT only)"),
+			query: z.string().describe("BigQuery SQL query to execute (SELECT only). "),
 			limit: z.number().optional().default(100).describe("Maximum number of rows to return (1-1000)")
 		}, async ({ query, limit }) => {
 			try {
