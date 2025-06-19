@@ -693,9 +693,9 @@ When users request a dashboard:
     - Use the user-provided name as the filename
     - Append the category to the directory path (e.g., "dashboards/uploads/sales" for sales category)
     - Replace static data with dynamic data fetching from BigQuery using FastAPI endpoints 
-    - Use simple, descriptive filenames WITHOUT timestamps, dates, or random numbers
+    - Use simple, descriptive filenames WITHOUT timestamps, dates, random numbers or versioning
     - Good examples: "sales-dashboard", "vendor-buybox-analysis", "product-performance"
-    - Bad examples: "dashboard-2024-01-15", "report_143523", "analysis-v2-final-updated"
+    - Bad examples: "dashboard-2024-01-15", "report_143523", "analysis-v2-final-updated", "dashboard-sales-v2"
 13. AFTER uploading, inform the user: "Dashboard uploaded! The URL dynamically fetches data from BigQuery. The dashboard will always show current data when accessed."
 14. Then ask if they would like to add interactive filters for a new version
 15. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status). If the dashboard contains Data about products, suggest a Search Filter (by product name, Artikelnummer/SKU or ASIN if available).
