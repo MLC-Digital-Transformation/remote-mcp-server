@@ -193,6 +193,18 @@ Use this catalog information to understand what data is available for analysis a
 			// Get the Chart.js documentation
 			const chartjsDocs = `# Chart.js v3.9.1 Quick Reference with MLC-direct Design System
 
+**IMPORTANT**: The chart types shown below (Bar, Line, Doughnut) are just EXAMPLES. You should use ALL available Chart.js chart types based on what best visualizes the data:
+- **Bar Chart**: For comparing categories
+- **Line Chart**: For trends over time
+- **Doughnut/Pie Chart**: For parts of a whole
+- **Scatter Chart**: For correlations between variables
+- **Bubble Chart**: For three-dimensional data
+- **Radar Chart**: For multivariate comparisons
+- **Polar Area Chart**: For cyclic data
+- **Mixed Charts**: Combine multiple chart types
+
+Choose the most appropriate visualization for the data and user needs!
+
 ## Essential Setup & Configuration
 
 ### Container Setup (IMPORTANT)
@@ -210,9 +222,10 @@ const ctx = document.getElementById('myChart').getContext('2d');
 const chart = new Chart(ctx, config);
 \`\`\`
 
-## Chart Types with MLC-direct Design System
+## Example Chart Types with MLC-direct Design System
+Note: These are just examples - use any Chart.js chart type that best fits your data!
 
-### 1. Bar Chart
+### Example 1: Bar Chart
 \`\`\`javascript
 // MLC-direct Design System colors
 const chartColors = {
@@ -293,7 +306,7 @@ new Chart(ctx, {
 });
 \`\`\`
 
-### 2. Line Chart
+### Example 2: Line Chart
 \`\`\`javascript
 new Chart(ctx, {
     type: 'line',
@@ -353,7 +366,7 @@ new Chart(ctx, {
 });
 \`\`\`
 
-### 3. Doughnut Chart (No scales needed)
+### Example 3: Doughnut Chart (No scales needed)
 \`\`\`javascript
 new Chart(ctx, {
     type: 'doughnut',
@@ -398,28 +411,55 @@ new Chart(ctx, {
 
 ## Real-World Data Patterns
 
-### Data Transformation from API
+### Data Transformation from API with NULL Handling
 \`\`\`javascript
-// Transform BigQuery results for Chart.js
+// Transform BigQuery results for Chart.js - ALWAYS handle NULL values!
 const transformData = (queryResults) => {
     // Validate data first
-    if (!queryResults.rows || queryResults.rows.length === 0) {
+    if (!queryResults || !queryResults.rows || queryResults.rows.length === 0) {
         return {
             labels: ['No Data'],
             datasets: [{ data: [0], backgroundColor: '#ccc' }]
         };
     }
     
-    // Map data safely with fallbacks
+    // Map data safely with NULL checks and fallbacks
     return {
-        labels: queryResults.rows.map(row => row.label || 'Unknown'),
+        labels: queryResults.rows.map(row => {
+            // Handle NULL or missing values
+            if (!row || row[0] === null || row[0] === undefined) {
+                return 'Unknown';
+            }
+            return String(row[0]);
+        }),
         datasets: [{
             label: 'Values',
-            data: queryResults.rows.map(row => row.value || 0),
+            data: queryResults.rows.map(row => {
+                // Ensure numeric values
+                if (!row || row[1] === null || row[1] === undefined) {
+                    return 0;
+                }
+                return Number(row[1]) || 0;
+            }),
             backgroundColor: chartColors.primary
         }]
     };
 };
+
+// IMPORTANT: When using string methods, ALWAYS check for null first!
+backgroundColor: queryResults.rows.map(row => {
+    const value = row[0];
+    // Guard against null/undefined
+    if (!value || value === null) return chartColors.gray;
+    
+    // Only use string methods after null check
+    if (typeof value === 'string') {
+        if (value.includes('Amazon')) return chartColors.success;
+        if (value.includes('MLC')) return chartColors.primary;
+    }
+    
+    return chartColors.gray;
+})
 \`\`\`
 
 ## Common Error Prevention
@@ -538,6 +578,7 @@ Your role is to help users understand and analyze their data effectively using t
 - Access the bigquery_catalog resource to see available datasets and tables (if not already provided above)
 - Create interactive HTML dashboards with charts and visualizations using the Chart.js patterns provided above
 - Use upload_dashboard() to upload finished dashboards to Google Cloud Storage and get a public URL
+- IMPORTANT: The examples show Bar, Line, and Doughnut charts, but you should use ANY Chart.js chart type (Scatter, Bubble, Radar, Polar Area, Area, etc.) that best visualizes the data
 
 **Required Workflow:**
 1. ALWAYS start by reading the bigquery_catalog resource to understand what datasets and tables are available
@@ -919,9 +960,10 @@ async function createDashboard() {
         
         const result = await fetchBigQueryData(query);
         
-        // Transform data for Chart.js
-        const labels = result.rows.map(row => row[0]); // First column
-        const values = result.rows.map(row => row[1]); // Second column
+        // Transform data for Chart.js - use PROPERTY NAMES from your SQL query!
+        // Example: SELECT product_name, SUM(sales) as total_sales
+        const labels = result.rows.map(row => row.product_name); // Use column alias
+        const values = result.rows.map(row => row.total_sales); // Use column alias
         
         // Update chart with fetched data
         chart.data.labels = labels;
@@ -1103,6 +1145,89 @@ function addRefreshButton() {
 - Update timestamp in dashboard title/subtitle on each data refresh
 - Consider adding a refresh button for manual data updates
 
+**CRITICAL: BigQuery Data Validation & API Response Format**
+
+**IMPORTANT**: The FastAPI BigQuery endpoint returns data with NAMED PROPERTIES, not arrays!
+
+API Response Format:
+\`\`\`javascript
+{
+  "rows": [
+    {
+      "column_name1": "value1",
+      "column_name2": "value2",
+      "column_name3": 123
+    },
+    // more rows...
+  ],
+  "columns": [
+    {"name": "column_name1", "type": "String"},
+    {"name": "column_name2", "type": "String"},
+    {"name": "column_name3", "type": "Int64"}
+  ]
+}
+\`\`\`
+
+Access data using property names, NOT array indices:
+\`\`\`javascript
+// WRONG - Array access won't work!
+const value = row[0];  // undefined!
+
+// CORRECT - Use property names from your SQL query
+const value = row.column_name;
+const count = row.product_count;
+\`\`\`
+
+When processing BigQuery results, ALWAYS validate data before using string methods or accessing properties:
+
+\`\`\`javascript
+// WRONG - Will fail if row[0] is null/undefined
+backgroundColor: data.rows.map(row => {
+    if (row[0].includes('text')) return color; // ERROR if row[0] is null!
+})
+
+// CORRECT - Always check for null/undefined first
+backgroundColor: data.rows.map(row => {
+    const value = row[0];
+    if (!value || value === null) return chartColors.gray;
+    if (typeof value === 'string' && value.includes('text')) return color;
+    return chartColors.gray;
+})
+
+// Safe data access patterns with PROPERTY NAMES:
+// 1. For labels - always provide fallback
+labels: data.rows.map(row => row.category_name || 'Unknown'),
+
+// 2. For numeric data - ensure valid numbers
+data: data.rows.map(row => {
+    const value = row.total_count;
+    return (value !== null && value !== undefined) ? Number(value) : 0;
+}),
+
+// 3. For conditional styling - guard all property access
+backgroundColor: data.rows.map(row => {
+    const label = row.status;
+    if (!label) return chartColors.gray;
+    
+    // For string comparisons
+    if (typeof label === 'string') {
+        if (label.includes('A -')) return chartColors.success;
+        if (label === 'Amazon') return chartColors.primary;
+    }
+    
+    return chartColors.gray;
+}),
+
+// 4. For accessing properties safely
+data: data.rows.map(row => {
+    // Check if row exists and has the property
+    if (!row || !row.hasOwnProperty('revenue')) return 0;
+    return Number(row.revenue) || 0;
+})
+\`\`\`
+
+**Remember**: BigQuery can return NULL values, empty strings, or missing data. Always validate before using!
+
 **Analysis Guidelines:**
 - Begin every analysis by accessing bigquery_catalog to discover available data
 - Provide clear explanations of your findings
@@ -1128,6 +1253,19 @@ function addRefreshButton() {
 		}, async () => {
 			const chartjsDocs = `# Chart.js v3.9.1 Quick Reference
 
+**IMPORTANT**: The chart types shown below (Bar, Line, Doughnut, Multiple Datasets) are just EXAMPLES. You should use ALL available Chart.js chart types based on what best visualizes the data:
+- **Bar Chart**: For comparing categories
+- **Line Chart**: For trends over time
+- **Doughnut/Pie Chart**: For parts of a whole
+- **Scatter Chart**: For correlations between variables
+- **Bubble Chart**: For three-dimensional data
+- **Radar Chart**: For multivariate comparisons
+- **Polar Area Chart**: For cyclic data
+- **Area Chart**: For cumulative totals
+- **Mixed Charts**: Combine multiple chart types in one visualization
+
+Choose the most appropriate visualization for the data and user needs!
+
 ## Essential Setup & Configuration
 
 ### Container Setup (IMPORTANT)
@@ -1145,9 +1283,10 @@ const ctx = document.getElementById('myChart').getContext('2d');
 const chart = new Chart(ctx, config);
 \`\`\`
 
-## Chart Types with MLC-direct Design System
+## Example Chart Types with MLC-direct Design System
+Note: These are just examples - use any Chart.js chart type that best fits your data!
 
-### 1. Bar Chart
+### Example 1: Bar Chart
 \`\`\`javascript
 // MLC-direct Design System colors
 const chartColors = {
@@ -1228,7 +1367,7 @@ new Chart(ctx, {
 });
 \`\`\`
 
-### 2. Line Chart
+### Example 2: Line Chart
 \`\`\`javascript
 new Chart(ctx, {
     type: 'line',
@@ -1288,7 +1427,7 @@ new Chart(ctx, {
 });
 \`\`\`
 
-### 3. Doughnut Chart (No scales needed)
+### Example 3: Doughnut Chart (No scales needed)
 \`\`\`javascript
 new Chart(ctx, {
     type: 'doughnut',
@@ -1331,7 +1470,7 @@ new Chart(ctx, {
 });
 \`\`\`
 
-### 4. Multiple Datasets Bar Chart
+### Example 4: Multiple Datasets Bar Chart
 \`\`\`javascript
 new Chart(ctx, {
     type: 'bar',
@@ -1396,28 +1535,55 @@ new Chart(ctx, {
 
 ## Real-World Data Patterns
 
-### Data Transformation from API
+### Data Transformation from API with NULL Handling
 \`\`\`javascript
-// Transform BigQuery results for Chart.js
+// Transform BigQuery results for Chart.js - ALWAYS handle NULL values!
 const transformData = (queryResults) => {
     // Validate data first
-    if (!queryResults.rows || queryResults.rows.length === 0) {
+    if (!queryResults || !queryResults.rows || queryResults.rows.length === 0) {
         return {
             labels: ['No Data'],
             datasets: [{ data: [0], backgroundColor: '#ccc' }]
         };
     }
     
-    // Map data safely with fallbacks
+    // Map data safely with NULL checks and fallbacks
     return {
-        labels: queryResults.rows.map(row => row.label || 'Unknown'),
+        labels: queryResults.rows.map(row => {
+            // Handle NULL or missing values
+            if (!row || row[0] === null || row[0] === undefined) {
+                return 'Unknown';
+            }
+            return String(row[0]);
+        }),
         datasets: [{
             label: 'Values',
-            data: queryResults.rows.map(row => row.value || 0),
+            data: queryResults.rows.map(row => {
+                // Ensure numeric values
+                if (!row || row[1] === null || row[1] === undefined) {
+                    return 0;
+                }
+                return Number(row[1]) || 0;
+            }),
             backgroundColor: chartColors.primary
         }]
     };
 };
+
+// IMPORTANT: When using string methods, ALWAYS check for null first!
+backgroundColor: queryResults.rows.map(row => {
+    const value = row[0];
+    // Guard against null/undefined
+    if (!value || value === null) return chartColors.gray;
+    
+    // Only use string methods after null check
+    if (typeof value === 'string') {
+        if (value.includes('Amazon')) return chartColors.success;
+        if (value.includes('MLC')) return chartColors.primary;
+    }
+    
+    return chartColors.gray;
+})
 \`\`\`
 
 ### Safe Context Access for Dynamic Styling
