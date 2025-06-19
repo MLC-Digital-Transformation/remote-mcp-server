@@ -51,7 +51,7 @@ export class MyMCP extends McpAgent {
 		console.log(`MCP Server initialized with role: ${this.role}`);
 
 		// Test role tool - prints the current role
-		this.server.tool("get_role", {}, async () => {
+		this.server.tool("get_role", "Get the current MCP server role configuration", {}, async () => {
 			console.log(`Current role accessed: ${this.role}`);
 			return {
 				content: [{ type: "text", text: `Current MCP Server Role: ${this.role}` }],
@@ -59,7 +59,7 @@ export class MyMCP extends McpAgent {
 		});
 
 		// Get BigQuery schema
-		this.server.tool("get_schema_table_view", {
+		this.server.tool("get_schema_table_view", "Get schema information for a specific BigQuery table or view including column names, types, and descriptions", {
 			dataset_with_table: z.string().describe("Dataset and table/view name in format 'dataset.table' (e.g., 'products.Produkt')"),
 			include_description: z.boolean().optional().default(true).describe("Include column descriptions in the schema")
 		}, async ({ dataset_with_table, include_description }) => {
@@ -86,7 +86,7 @@ export class MyMCP extends McpAgent {
 
 
 		// Execute BigQuery query (SELECT only)
-		this.server.tool("execute_query", {
+		this.server.tool("execute_query", "Execute a SELECT query against BigQuery and return the results. Use this when you need to query data from BigQuery tables or views. Make sure to use get_schema_table_view() to check how to construct the query.", {
 			query: z.string().describe("BigQuery SQL query to execute (SELECT only). "),
 			limit: z.number().optional().default(100).describe("Maximum number of rows to return (1-1000)")
 		}, async ({ query, limit }) => {
