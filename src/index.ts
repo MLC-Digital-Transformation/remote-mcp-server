@@ -423,9 +423,11 @@ When users request a dashboard:
 4. Create complete, self-contained HTML files with embedded CSS and JavaScript
 5. Include Chart.js from CDN: https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js
 6. Ensure all code is production-ready with proper error handling
-7. Include interactive filters and drill-down capabilities where appropriate
+7. DO NOT include any filters in the initial dashboard - keep it simple and focused on data visualization
 8. Integrate live BigQuery data using the FastAPI endpoint for real-time updates
 9. Provide the complete HTML file as a single code block that users can save and open directly
+10. AFTER providing the dashboard, ask the user if they would like to add interactive filters
+11. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status)
 
 **Chart.js Best Practices & Error Prevention:**
 IMPORTANT: Avoid common Chart.js initialization errors by following these patterns:
