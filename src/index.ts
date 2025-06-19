@@ -108,6 +108,65 @@ export class MyMCP extends McpAgent {
 			}
 		});
 
+		// Upload HTML dashboard to Google Cloud Storage
+		this.server.tool("upload_dashboard", "Upload an HTML dashboard file to Google Cloud Storage and get a public URL", {
+			html_content: z.string().describe("The complete HTML content of the dashboard"),
+			filename: z.string().describe("The base filename for the dashboard (without .html extension)"),
+			directory: z.string().optional().default("dashboards/uploads").describe("Directory in the bucket (default: dashboards/uploads)")
+		}, async ({ html_content, filename, directory }) => {
+			try {
+				// Create a Blob from the HTML content
+				const blob = new Blob([html_content], { type: 'text/html' });
+				
+				// Create FormData and append the file
+				const formData = new FormData();
+				formData.append('file', blob, `${filename}.html`);
+				formData.append('directory', directory);
+				
+				// Call the FastAPI upload endpoint (no auth required)
+				const response = await fetch(`${FASTAPI_BASE_URL}/storage/upload-html`, {
+					method: 'POST',
+					body: formData
+				});
+				
+				if (!response.ok) {
+					let errorMessage = `Upload failed with status ${response.status}`;
+					try {
+						const errorData = await response.json() as { detail?: string };
+						if (errorData.detail) {
+							errorMessage = errorData.detail;
+						}
+					} catch {
+						// If JSON parsing fails, use the default error message
+					}
+					throw new Error(errorMessage);
+				}
+				
+				const result = await response.json() as {
+					status: string;
+					message: string;
+					filename: string;
+					directory: string;
+					url: string;
+				};
+				
+				// Return the upload result
+				return {
+					content: [{
+						type: "text",
+						text: `Dashboard uploaded successfully!\n\nPublic URL: ${result.url}\n\nThe dashboard is now accessible at the URL above.`
+					}],
+				};
+			} catch (error) {
+				return {
+					content: [{
+						type: "text",
+						text: `Failed to upload dashboard: ${error instanceof Error ? error.message : String(error)}`
+					}],
+				};
+			}
+		});
+
 		// BI Analyst & Dashboard Builder prompt
 		this.server.prompt("BI Analyst & Dashboard Builder", "Data analysis assistant for BigQuery queries and dashboard creation", {
 		}, async ({}) => {
@@ -415,6 +474,7 @@ Your role is to help users understand and analyze their data effectively using t
 - Use execute_query() to run SELECT queries and retrieve data
 - Access the bigquery_catalog resource to see available datasets and tables (if not already provided above)
 - Create interactive HTML dashboards with charts and visualizations using the Chart.js patterns provided above
+- Use upload_dashboard() to upload finished dashboards to Google Cloud Storage and get a public URL
 
 **Required Workflow:**
 1. ALWAYS start by reading the bigquery_catalog resource to understand what datasets and tables are available
@@ -422,7 +482,7 @@ Your role is to help users understand and analyze their data effectively using t
 3. Write and execute appropriate SELECT queries using execute_query()
 4. Provide clear analysis and insights based on the results
 
-**Dashboard Creation:**
+**Dashboard Creation Workflow:**
 When users request a dashboard:
 1. Ask the user to choose between light or dark theme. Dont continue without a theme selection.
 2. Use the Chart.js patterns provided above to create error-free visualizations
@@ -432,10 +492,12 @@ When users request a dashboard:
 6. Ensure all code is production-ready with proper error handling
 7. DO NOT include any filters in the initial dashboard - keep it simple and focused on data visualization
 8. Use static data from BigQuery queries - dashboards will show a snapshot of current data
-9. Provide the complete HTML file as a single code block that users can save and open directly
-10. AFTER providing the dashboard, inform the user: "This dashboard shows current data from BigQuery. You can ask me to update it with fresh data anytime, or provide it to Matthew to connect it to a real-time data source."
-11. Then ask if they would like to add interactive filters
-12. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status)
+9. Provide the complete HTML file as a single code block for user review
+10. Ask the user: "Would you like me to upload this dashboard to get a shareable URL?"
+11. If yes, use the upload_dashboard() tool to upload the HTML and provide the public URL
+12. AFTER uploading, inform the user: "Dashboard uploaded! The URL shows current data from BigQuery. You can ask me to create an updated version anytime, or provide it to Matthew to connect it to a real-time data source."
+13. Then ask if they would like to add interactive filters for a new version
+14. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status)
 
 **Chart.js Best Practices & Error Prevention:**
 IMPORTANT: Avoid common Chart.js initialization errors by following these patterns:
