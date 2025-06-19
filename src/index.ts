@@ -640,9 +640,12 @@ When users request a dashboard:
 6. DO NOT include any filters in the initial dashboard - keep it simple and focused on data visualization
 7. Use static data from BigQuery queries - dashboards will show a snapshot of current data
 8. Provide the complete HTML file as a single code block for user review
-9. Before uploading, consider using list_dashboards() to check existing dashboard names and avoid duplicates
-10. Ask the user: "Would you like me to upload this dashboard to the MLC-direct Dashboard Hub?"
-11. If yes, use the upload_dashboard() tool to upload the HTML and provide the public URL. Replace static data with dynamic data fetching from BigQuery using FastAPI endpoints. 
+9. Ask the user: "Would you like me to upload this dashboard to the MLC-direct Dashboard Hub?"
+10. If yes, ALWAYS ask: "What would you like to name this dashboard?" and wait for the user's response
+    - Suggest a descriptive name based on the dashboard content (e.g., "vendor-buybox-analysis" or "sales-performance")
+    - Use list_dashboards() to check if the name already exists
+    - If it exists, inform the user and ask for a different name
+11. Once you have a unique name, use the upload_dashboard() tool to upload the HTML with the user-provided name. Replace static data with dynamic data fetching from BigQuery using FastAPI endpoints. 
     - **IMPORTANT**: Use simple, descriptive filenames WITHOUT timestamps, dates, or random numbers
     - Good examples: "sales-dashboard", "vendor-buybox-analysis", "product-performance"
     - Bad examples: "dashboard-2024-01-15", "report_143523", "analysis-v2-final-updated"
