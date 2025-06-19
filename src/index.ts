@@ -110,10 +110,33 @@ export class MyMCP extends McpAgent {
 			}
 		});
 
-		// BigQuery datasets and tables resource
+		// Execute BigQuery query (SELECT only)
+		this.server.tool("execute_query", {
+			query: z.string().describe("BigQuery SQL query to execute (SELECT only)"),
+			limit: z.number().optional().default(100).describe("Maximum number of rows to return (1-1000)")
+		}, async ({ query, limit }) => {
+			try {
+				const endpoint = `/bigquery/execute_query`;
+				
+				const result = await this.callFastAPI(endpoint, "POST", {
+					query: query,
+					limit: limit
+				});
+				
+				return {
+					content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+				};
+			} catch (error) {
+				return {
+					content: [{ type: "text", text: `Failed to execute query: ${error instanceof Error ? error.message : String(error)}` }],
+				};
+			}
+		});
+
+		// BigQuery datasets, tables, and views resource
 		this.server.resource("bigquery_catalog", "bigquery://catalog", {
 			mimeType: "application/json",
-			description: "Available BigQuery datasets and tables"
+			description: "Available BigQuery datasets, tables, and views"
 		}, async () => {
 			try {
 				// Call your FastAPI endpoint that lists datasets/tables
