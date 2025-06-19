@@ -1370,15 +1370,6 @@ data: data.rows.map(row => {
 				}],
 			};
 		});
-
-		// Chart.js Documentation Resource
-		this.server.resource("chartjs_docs", "docs://chartjs", {
-			mimeType: "text/markdown",
-			description: "Chart.js v3.9.1 documentation and examples for creating error-free charts"
-		}, async () => {
-			const chartjsDocs = `# Chart.js v3.9.1 Quick Reference
-
-**IMPORTANT**: The chart types shown below (Bar, Line, Doughnut, Multiple Datasets) are just EXAMPLES. You should use ALL available Chart.js chart types based on what best visualizes the data:
 - **Bar Chart**: For comparing categories
 - **Line Chart**: For trends over time
 - **Doughnut/Pie Chart**: For parts of a whole

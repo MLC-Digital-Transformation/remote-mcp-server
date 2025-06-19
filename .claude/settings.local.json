@@ -5,7 +5,8 @@
       "Bash(npm run:*)",
       "Bash(npm install)",
       "Bash(npx biome format:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
