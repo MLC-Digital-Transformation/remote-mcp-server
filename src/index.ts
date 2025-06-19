@@ -110,7 +110,7 @@ export class MyMCP extends McpAgent {
 
 		// Upload HTML dashboard to Google Cloud Storage
 		this.server.tool("upload_dashboard", "Upload an HTML dashboard file to Google Cloud Storage and get a public URL", {
-			html_content: z.string().describe("The complete HTML content of the dashboard"),
+			html_content: z.string().describe("The complete HTML content of the dashboard. Should contain JavaScript code that fetches data from the FastAPI endpoint using fetch() to /bigquery/execute_query with POST method. Include proper error handling and loading states."),
 			filename: z.string().describe("The base filename for the dashboard (without .html extension)"),
 			directory: z.string().optional().default("dashboards/uploads").describe("Directory in the bucket (default: dashboards/uploads)")
 		}, async ({ html_content, filename, directory }) => {
@@ -493,9 +493,9 @@ When users request a dashboard:
 7. DO NOT include any filters in the initial dashboard - keep it simple and focused on data visualization
 8. Use static data from BigQuery queries - dashboards will show a snapshot of current data
 9. Provide the complete HTML file as a single code block for user review
-10. Ask the user: "Would you like me to upload this dashboard to get a shareable URL?"
-11. If yes, use the upload_dashboard() tool to upload the HTML and provide the public URL
-12. AFTER uploading, inform the user: "Dashboard uploaded! The URL shows current data from BigQuery. You can ask me to create an updated version anytime, or provide it to Matthew to connect it to a real-time data source."
+10. Ask the user: "Would you like me to upload this dashboard to the MLC-direct Dashboard Hub?"
+11. If yes, use the upload_dashboard() tool to upload the HTML and provide the public URL. Replace static data with dynamic data fetching from BigQuery using FastAPI endpoints.
+12. AFTER uploading, inform the user: "Dashboard uploaded! The URL dynamically fetches data from BigQuery. The dashboard will always show current data when accessed."
 13. Then ask if they would like to add interactive filters for a new version
 14. If they want filters, suggest 2-3 relevant filter options based on the data (e.g., date range, categories, status)
 
@@ -528,77 +528,246 @@ chart.data.datasets[0].backgroundColor = chart.data.datasets[0].data.map(value =
 chart.update();
 \`\`\`
 
-**Static Data Integration:**
-For dashboards with current BigQuery data snapshot:
+**Dynamic Data Integration with FastAPI:**
+For dashboards that fetch current BigQuery data dynamically:
 
 \`\`\`javascript
-// Example: Static dashboard with embedded data
-function createDashboard(queryResults) {
-    // Transform BigQuery results that were fetched server-side
-    const labels = queryResults.rows.map(row => row[0]); // First column as labels
-    const values = queryResults.rows.map(row => row[1]); // Second column as values
-    
-    // Chart configuration with company colors
+// Example: Fetch data from FastAPI BigQuery endpoint
+async function fetchBigQueryData(query) {
+    try {
+        const response = await fetch('https://fast-api-165560968031.europe-west3.run.app/bigquery/execute_query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                query: query,
+                limit: 100  // Adjust limit as needed (max 1000)
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(\`HTTP error! status: \${response.status}\`);
+        }
+        
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
+// Example: Create dashboard with dynamic data
+async function createDashboard() {
     const ctx = document.getElementById('myChart').getContext('2d');
+    
+    // Initialize with loading state
     const chart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels: ['Loading...'],
             datasets: [{
-                label: 'Data from BigQuery',
-                data: values,
-                backgroundColor: '#4ECDC4', // Primary company color
-                borderColor: '#6B46C1',     // Secondary company color
-                borderWidth: 2
+                label: 'Fetching data...',
+                data: [0],
+                backgroundColor: '#ccc'
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'BigQuery Data Dashboard'
-                },
-                subtitle: {
-                    display: true,
-                    text: 'Data snapshot from: ' + new Date().toLocaleString()
-                }
-            }
+            maintainAspectRatio: false
         }
     });
     
-    return chart;
+    try {
+        // Example query - replace with your actual query
+        const query = "SELECT product_name, SUM(sales) as total_sales FROM products.sales_data GROUP BY product_name ORDER BY total_sales DESC LIMIT 10";
+        
+        const result = await fetchBigQueryData(query);
+        
+        // Transform data for Chart.js
+        const labels = result.rows.map(row => row[0]); // First column
+        const values = result.rows.map(row => row[1]); // Second column
+        
+        // Update chart with fetched data
+        chart.data.labels = labels;
+        chart.data.datasets[0] = {
+            label: 'Total Sales',
+            data: values,
+            backgroundColor: '#4ECDC4', // Primary company color
+            borderColor: '#6B46C1',     // Secondary company color
+            borderWidth: 2
+        };
+        
+        // Update chart options
+        chart.options.plugins = {
+            title: {
+                display: true,
+                text: 'Sales Dashboard'
+            },
+            subtitle: {
+                display: true,
+                text: 'Live data from BigQuery - Last updated: ' + new Date().toLocaleString()
+            }
+        };
+        
+        chart.update();
+        
+    } catch (error) {
+        // Show error state
+        chart.data.labels = ['Error loading data'];
+        chart.data.datasets[0] = {
+            label: 'Failed to fetch data',
+            data: [0],
+            backgroundColor: '#f44336'
+        };
+        chart.update();
+    }
 }
 
-// Example: Embed data directly in HTML
+// Example: Complete HTML structure with dynamic data loading
 const dashboardHTML = \`
-<script>
-    // Data from BigQuery query (embedded at generation time)
-    const bigQueryData = {
-        rows: [
-            ['Product A', 150],
-            ['Product B', 230],
-            ['Product C', 180]
-        ],
-        timestamp: '${new Date().toISOString()}'
-    };
-    
-    // Create chart with embedded data
-    window.onload = function() {
-        createDashboard(bigQueryData);
-    };
-</script>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dynamic BigQuery Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        /* Your styles here */
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1>Sales Analytics</h1>
+        <div class="chart-container">
+            <canvas id="salesChart"></canvas>
+        </div>
+    </div>
+    <script>
+        // Dynamic data fetching on page load
+        window.onload = async function() {
+            await createDashboard();
+        };
+    </script>
+</body>
+</html>
 \`;
 \`\`\`
 
+**Multiple Charts Example with Dynamic Data:**
+\`\`\`javascript
+// Example: Dashboard with multiple charts fetching different queries
+async function initializeDashboard() {
+    // Helper function to create loading chart
+    function createLoadingChart(ctx) {
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Loading...'],
+                datasets: [{
+                    label: 'Fetching data...',
+                    data: [0],
+                    backgroundColor: '#ccc'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+    
+    // Chart 1: Sales by Product
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    const salesChart = createLoadingChart(salesCtx);
+    
+    // Chart 2: Monthly Trends
+    const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+    const trendsChart = createLoadingChart(trendsCtx);
+    
+    // Fetch data for both charts in parallel
+    try {
+        const [salesData, trendsData] = await Promise.all([
+            fetchBigQueryData("SELECT product_name, SUM(revenue) as total FROM sales.transactions GROUP BY product_name ORDER BY total DESC LIMIT 5"),
+            fetchBigQueryData("SELECT DATE_TRUNC(order_date, MONTH) as month, SUM(revenue) as revenue FROM sales.transactions WHERE order_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH) GROUP BY month ORDER BY month")
+        ]);
+        
+        // Update Sales Chart
+        salesChart.data.labels = salesData.rows.map(row => row[0]);
+        salesChart.data.datasets[0] = {
+            label: 'Revenue by Product',
+            data: salesData.rows.map(row => row[1]),
+            backgroundColor: '#4ECDC4',
+            borderColor: '#6B46C1',
+            borderWidth: 2
+        };
+        salesChart.options.plugins = {
+            title: {
+                display: true,
+                text: 'Top 5 Products by Revenue'
+            }
+        };
+        salesChart.update();
+        
+        // Update Trends Chart (as line chart)
+        trendsChart.config.type = 'line';
+        trendsChart.data.labels = trendsData.rows.map(row => new Date(row[0]).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+        trendsChart.data.datasets[0] = {
+            label: 'Monthly Revenue Trend',
+            data: trendsData.rows.map(row => row[1]),
+            borderColor: '#6B46C1',
+            backgroundColor: 'rgba(107, 70, 193, 0.1)',
+            tension: 0.1
+        };
+        trendsChart.options.plugins = {
+            title: {
+                display: true,
+                text: 'Revenue Trend - Last 6 Months'
+            }
+        };
+        trendsChart.update();
+        
+        // Update last refresh time
+        document.getElementById('lastRefresh').textContent = new Date().toLocaleString();
+        
+    } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+        // Show error state in both charts
+        [salesChart, trendsChart].forEach(chart => {
+            chart.data.labels = ['Error'];
+            chart.data.datasets[0] = {
+                label: 'Failed to load data',
+                data: [0],
+                backgroundColor: '#f44336'
+            };
+            chart.update();
+        });
+    }
+}
+
+// Add refresh functionality
+function addRefreshButton() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = 'Refreshing...';
+            await initializeDashboard();
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = 'Refresh Data';
+        });
+    }
+}
+\`\`\`
+
 **Dashboard Template Structure:**
-- Embed query results directly in the HTML as JavaScript objects
-- Add timestamp indicators showing when data was fetched
-- Always initialize charts with safe default values
-- Check for existence of data properties before accessing them
-- Use try-catch blocks around chart operations
-- Include data snapshot timestamp in dashboard title or subtitle
+- Use fetch() to dynamically retrieve data from the FastAPI endpoint
+- Add timestamp indicators showing when data was last fetched
+- Always initialize charts with loading states
+- Include proper error handling for failed API requests
+- Use try-catch blocks around all async operations
+- Update timestamp in dashboard title/subtitle on each data refresh
+- Consider adding a refresh button for manual data updates
 
 **Analysis Guidelines:**
 - Begin every analysis by accessing bigquery_catalog to discover available data
