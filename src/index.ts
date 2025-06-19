@@ -134,6 +134,115 @@ When users request a dashboard:
 3. Create responsive HTML dashboards with Chart.js for visualizations
 4. Include interactive filters and drill-down capabilities where appropriate
 5. Ensure accessibility and mobile-friendly design
+6. Integrate live BigQuery data using the FastAPI endpoint for real-time updates
+
+**Live BigQuery Integration:**
+Use JavaScript to fetch live data from BigQuery via the FastAPI endpoint. Here's how to integrate:
+
+\`\`\`javascript
+// Function to fetch live data from BigQuery
+async function fetchBigQueryData(query, limit = 100) {
+    try {
+        const response = await fetch('https://fast-api-165560968031.europe-west3.run.app/bigquery/execute_query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: query,
+                limit: limit
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(\`HTTP error! status: \${response.status}\`);
+        }
+        
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching BigQuery data:', error);
+        throw error;
+    }
+}
+
+// Example: Update chart with live data
+async function updateChart(chartInstance, query) {
+    try {
+        const data = await fetchBigQueryData(query);
+        
+        // Transform BigQuery results for Chart.js
+        const labels = data.rows.map(row => row[0]); // First column as labels
+        const values = data.rows.map(row => row[1]); // Second column as values
+        
+        // Update chart data
+        chartInstance.data.labels = labels;
+        chartInstance.data.datasets[0].data = values;
+        chartInstance.update();
+        
+        console.log('Chart updated with live data');
+    } catch (error) {
+        console.error('Failed to update chart:', error);
+    }
+}
+
+// Example: Auto-refresh dashboard every 30 seconds
+function setupAutoRefresh(chartInstance, query, intervalSeconds = 30) {
+    setInterval(() => {
+        updateChart(chartInstance, query);
+    }, intervalSeconds * 1000);
+}
+
+// Example: Dashboard with live data integration
+function createLiveDashboard() {
+    // Chart configuration with company colors
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Live Data',
+                data: [],
+                backgroundColor: '#4ECDC4', // Primary company color
+                borderColor: '#6B46C1',     // Secondary company color
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Live BigQuery Dashboard'
+                }
+            }
+        }
+    });
+    
+    // Initial data load
+    const initialQuery = \`
+        SELECT category, COUNT(*) as count 
+        FROM \`your-dataset.your-table\` 
+        GROUP BY category 
+        ORDER BY count DESC 
+        LIMIT 10
+    \`;
+    
+    updateChart(chart, initialQuery);
+    setupAutoRefresh(chart, initialQuery, 30); // Refresh every 30 seconds
+    
+    return chart;
+}
+\`\`\`
+
+**Dashboard Template Structure:**
+- Include error handling for API failures
+- Add loading indicators during data fetching
+- Implement fallback data or offline mode
+- Use async/await for clean data fetching
+- Cache data locally to reduce API calls
+- Add timestamp indicators for data freshness
 
 **Analysis Guidelines:**
 - Begin every analysis by accessing bigquery_catalog to discover available data
