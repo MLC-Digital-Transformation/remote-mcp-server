@@ -104,6 +104,40 @@ Update the Claude configuration file to point to your `workers.dev` URL (ex: `wo
 }
 ```
 
+### Using Authentication Token (Optional)
+
+The MCP server supports optional authentication tokens that will be passed to all FastAPI backend requests. There are multiple ways to provide the auth token:
+
+#### Method 1: Query Parameter (Recommended for testing)
+Add the token as a query parameter to the SSE URL:
+
+```json
+{
+  "mcpServers": {
+    "mlcd-mcp-server": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://remote-mcp-server.matthew-ludwig.workers.dev/sse?auth_token=your-auth-token-here"
+      ]
+    }
+  }
+}
+```
+
+#### Method 2: Environment Variable (For Cloudflare Worker deployment)
+Set the `MCP_AUTH_TOKEN` environment variable in your Cloudflare Worker:
+
+```bash
+wrangler secret put MCP_AUTH_TOKEN
+# Enter your auth token when prompted
+```
+
+#### Method 3: Authorization Header
+If your MCP client supports custom headers, you can pass the token as a Bearer token in the Authorization header.
+
+The token will be automatically included in all API requests to the FastAPI backend as a Bearer token in the Authorization header.
+
 ## Debugging
 
 Should anything go wrong it can be helpful to restart Claude, or to try connecting directly to your

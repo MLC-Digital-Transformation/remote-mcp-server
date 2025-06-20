@@ -20,6 +20,7 @@ import { bigqueryCatalogResource } from "./resources/index.js";
 
 export class MyMCP extends McpAgent {
 	protected role: string = "no_role_assigned";
+	protected authToken?: string;
 
 	server = new McpServer({
 		name: "mlcd-mcp-server",
@@ -32,13 +33,28 @@ export class MyMCP extends McpAgent {
 		console.log(`Role set to: ${this.role}`);
 	}
 
+	// Method to set auth token
+	setAuthToken(token?: string) {
+		this.authToken = token;
+		if (token) {
+			console.log(`Auth token set`);
+		}
+	}
+
 	private async callFastAPI(endpoint: string, method: string = "GET", body?: any) {
 		const url = `${FASTAPI_BASE_URL}${endpoint}`;
+		const headers: Record<string, string> = {
+			"Content-Type": "application/json",
+		};
+
+		// Add auth token to headers if available
+		if (this.authToken) {
+			headers["Authorization"] = `Bearer ${this.authToken}`;
+		}
+
 		const options: RequestInit = {
 			method,
-			headers: {
-				"Content-Type": "application/json",
-			},
+			headers,
 		};
 
 		if (body && method !== "GET") {
@@ -67,7 +83,8 @@ export class MyMCP extends McpAgent {
 		// Create context object for tools, prompts, and resources
 		const context = {
 			callFastAPI: this.callFastAPI.bind(this),
-			role: this.role
+			role: this.role,
+			authToken: this.authToken
 		};
 
 		// Special handling for getRoleTool to pass role in the context
@@ -124,7 +141,7 @@ export class MyMCP extends McpAgent {
 	}
 }
 
-// Create a handler that extracts role from request and passes it to MCP agent
+// Create a handler that extracts role and auth token from request and passes it to MCP agent
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		// Extract role from query parameters, headers, or environment (in order of preference)
@@ -135,15 +152,30 @@ export default {
 		
 		const role = roleFromQuery || roleFromHeader || 'no_role_assigned';
 		
+		// Extract auth token from query parameters, headers, or environment (in order of preference)
+		const authTokenFromQuery = url.searchParams.get('auth_token');
+		const authTokenFromHeader = request.headers.get('Authorization')?.replace('Bearer ', '');
+		const authTokenFromEnv = (env as any).MCP_AUTH_TOKEN;
+		
+		const authToken = authTokenFromQuery || authTokenFromHeader || authTokenFromEnv;
+		
 		console.log(`Request received with role: ${role} (source: ${
 			roleFromQuery ? 'query' : roleFromHeader ? 'header' : 'no_role_assigned'
 		})`);
 		
-		// Create a custom MCP class instance with the extracted role
+		if (authToken) {
+			console.log(`Auth token found (source: ${
+				authTokenFromQuery ? 'query' : authTokenFromHeader ? 'header' : authTokenFromEnv ? 'environment' : 'none'
+			})`);
+		}
+		
+		// Create a custom MCP class instance with the extracted role and auth token
 		class DynamicMCP extends MyMCP {
 			async init() {
 				// Override the role with the request-specific role
 				this.setRole(role);
+				// Set the auth token if available
+				this.setAuthToken(authToken);
 				await super.init();
 			}
 		}
