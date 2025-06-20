@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Remote MCP Server Overview
 
-This is a simplified Remote MCP (Model Context Protocol) Server deployed on Cloudflare Workers that acts as a proxy to a FastAPI backend application. It enables Claude Desktop and other MCP clients to connect to FastAPI endpoints through the MCP protocol over HTTP/SSE without authentication.
+This is a simplified Remote MCP (Model Context Protocol) Server deployed on Cloudflare Workers that acts as a proxy to a FastAPI backend application. It enables Claude Desktop and other MCP clients to connect to FastAPI endpoints through the MCP protocol over HTTP/SSE using token-based authentication.
 
 ## Project Structure
 
@@ -62,7 +62,7 @@ remote-mcp-server/
 
 ## Key Features
 
-- **No Authentication Required** - Direct connection without OAuth prompts
+- **Token-Based Authentication** - Secure access using auth tokens
 - **FastAPI Proxy** - Routes MCP calls to your FastAPI backend
 - **Simple Setup** - Just connect to the `/sse` endpoint
 - **Auto-Discovery** - Automatically discovers FastAPI endpoints via OpenAPI
@@ -81,49 +81,37 @@ The MCP server provides the following proxy capabilities:
 
 **MCP Endpoint**: `https://your-worker-url.workers.dev/sse`
 
-No authentication is required - just add this URL to your Claude Desktop configuration.
+Authentication is required - provide an auth token to connect.
 
-## Role Configuration
+## Authentication Configuration
 
-The MCP server supports dynamic role configuration through multiple methods (in order of preference):
+The MCP server requires authentication through an auth token. The server supports multiple methods to provide the token (in order of preference):
 
-1. **Query Parameter**: `?role=data_analyst`
-2. **HTTP Header**: `x-role: data_analyst`
-3. **Environment Variable**: `ROLE` (fallback, configured in wrangler.jsonc)
-4. **Default**: `default`
+1. **Query Parameter**: `?auth_token=your_token_here`
+2. **HTTP Header**: `Authorization: Bearer your_token_here`
+3. **Environment Variable**: `MCP_AUTH_TOKEN` (configured in wrangler.jsonc)
 
-### Claude Desktop Configuration Examples
+When an auth token is provided, the server will:
+1. Fetch user data from the FastAPI backend
+2. Automatically assign the user's role based on their authentication
+3. Enable role-specific tools and permissions
 
-**Basic with role:**
+### Claude Desktop Configuration Example
+
 ```json
 "mlcd-mcp-server": {
   "command": "npx",
   "args": [
     "mcp-remote",
-    "https://remote-mcp-server.matthew-ludwig.workers.dev/sse?role=data_analyst"
+    "https://remote-mcp-server.matthew-ludwig.workers.dev/sse?auth_token=your_auth_token_here"
   ]
 }
 ```
 
-**Multiple role-based servers:**
-```json
-"mlcd-admin": {
-  "command": "npx",
-  "args": [
-    "mcp-remote",
-    "https://remote-mcp-server.matthew-ludwig.workers.dev/sse?role=admin"
-  ]
-},
-"mlcd-analyst": {
-  "command": "npx",
-  "args": [
-    "mcp-remote",
-    "https://remote-mcp-server.matthew-ludwig.workers.dev/sse?role=data_analyst"
-  ]
-}
-```
-
-**Testing**: Use the `get_role` tool to verify the current role.
+**Testing**: 
+- Use the `get_role` tool to verify the current role after authentication
+- Use the `get_user_data` tool to see full user details
+- Check server logs to confirm authentication status
 
 ## Adding New MCP Features
 
@@ -338,6 +326,9 @@ The current implementation provides these tools and resources:
    - Parameters: `directory` (optional string)
 6. **get_dashboard** - Get dashboard content and URL by name
    - Parameters: `dashboard_name` (string), `directory` (optional string)
+7. **get_user_data** - Get authenticated user information
+   - Parameters: None
+   - Returns: User email, role, and other authentication details
 
 ### Available Resources
 

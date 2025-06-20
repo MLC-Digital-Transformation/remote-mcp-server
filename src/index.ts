@@ -29,11 +29,6 @@ export class MyMCP extends McpAgent {
 		version: "1.0.0",
 	});
 
-	// Method to set role dynamically
-	setRole(role: string) {
-		this.role = role;
-		console.log(`Role set to: ${this.role}`);
-	}
 
 	// Method to set auth token
 	setAuthToken(token?: string) {
@@ -78,17 +73,29 @@ export class MyMCP extends McpAgent {
 	}
 
 	async init() {
+		// Log authentication status
+		if (!this.authToken) {
+			console.log('WARNING: No authentication token provided. Server starting without authentication.');
+		} else {
+			console.log('Authentication token provided, fetching user data...');
+		}
+		
 		// Try to fetch user data if auth token is available
-		if (this.authToken && this.role === "no_role_assigned") {
+		if (this.authToken) {
 			try {
 				const userData = await this.callFastAPI("/bigquery/user", "GET") as UserData;
 				if (userData && userData.Role) {
 					this.role = userData.Role.toLowerCase();
-					console.log(`User role fetched from API: ${this.role} (${userData.Email})`);
+					console.log(`User authenticated successfully: ${userData.Email} with role: ${this.role}`);
+				} else {
+					console.log('User data fetched but no role assigned');
 				}
 			} catch (error) {
-				console.log(`Failed to fetch user data, using default role: ${error}`);
+				console.log(`Failed to fetch user data: ${error}`);
+				this.role = "no_role_assigned";
 			}
+		} else {
+			this.role = "no_role_assigned";
 		}
 		
 		console.log(`MCP Server initialized with role: ${this.role}`);
@@ -132,10 +139,8 @@ export class MyMCP extends McpAgent {
 							};
 						}
 						
-						// Pass the current role in the context for getRoleTool
-						const currentContext = tool.name === 'get_role' 
-							? { ...context, role: roleContext.role, authToken: roleContext.authToken }
-							: context;
+						// Pass the current role and authToken in the context
+						const currentContext = { ...context, role: roleContext.role, authToken: roleContext.authToken };
 						return tool.handler(params, currentContext);
 					}
 				);
@@ -176,16 +181,10 @@ export class MyMCP extends McpAgent {
 	}
 }
 
-// Create a handler that extracts role and auth token from request and passes it to MCP agent
+// Create a handler that extracts auth token from request and passes it to MCP agent
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-		// Extract role from query parameters, headers, or environment (in order of preference)
 		const url = new URL(request.url);
-		const roleFromQuery = url.searchParams.get('role');
-		const roleFromHeader = request.headers.get('x-role');
-		const roleFromEnv = (env as any).ROLE;
-		
-		const role = roleFromQuery || roleFromHeader || 'no_role_assigned';
 		
 		// Extract auth token from query parameters, headers, or environment (in order of preference)
 		const authTokenFromQuery = url.searchParams.get('auth_token');
@@ -194,21 +193,17 @@ export default {
 		
 		const authToken = authTokenFromQuery || authTokenFromHeader || authTokenFromEnv;
 		
-		console.log(`Request received with role: ${role} (source: ${
-			roleFromQuery ? 'query' : roleFromHeader ? 'header' : 'no_role_assigned'
-		})`);
-		
 		if (authToken) {
 			console.log(`Auth token found (source: ${
 				authTokenFromQuery ? 'query' : authTokenFromHeader ? 'header' : authTokenFromEnv ? 'environment' : 'none'
 			})`);
+		} else {
+			console.log('No auth token provided');
 		}
 		
-		// Create a custom MCP class instance with the extracted role and auth token
+		// Create a custom MCP class instance with the auth token
 		class DynamicMCP extends MyMCP {
 			async init() {
-				// Override the role with the request-specific role
-				this.setRole(role);
 				// Set the auth token if available
 				this.setAuthToken(authToken);
 				await super.init();
