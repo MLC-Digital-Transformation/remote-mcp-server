@@ -18,7 +18,7 @@ export interface RolePermissions {
 // Define role permissions
 export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     // Full admin access
-    admin: {
+    guest: {
         tools: [
             'get_role',
             'get_user_data',
@@ -80,7 +80,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     },
 
     // Guest/unauthenticated role - minimal access
-    guest: {
+    admin: {
         tools: [
             'get_role'
         ],

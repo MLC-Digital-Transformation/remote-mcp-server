@@ -34,7 +34,9 @@ export class MyMCP extends McpAgent {
 	setAuthToken(token?: string) {
 		this.authToken = token;
 		if (token) {
-			console.log(`Auth token set`);
+			console.log(`✅ Auth token set successfully (length: ${token.length})`);
+		} else {
+			console.log(`⚠️ setAuthToken called with empty/undefined token`);
 		}
 	}
 
@@ -251,11 +253,16 @@ export default {
 			async init() {
 				console.log('\n📦 Initializing MCP Instance...');
 				console.log('----------------------------------------');
+				console.log(`   Auth token in closure: ${authToken ? 'YES' : 'NO'}`);
+				console.log(`   this.authToken before set: ${this.authToken ? 'YES' : 'NO'}`);
 				
 				// Set the auth token if available
 				if (authToken) {
 					this.setAuthToken(authToken);
 					console.log('✅ Auth token configured in MCP instance');
+					console.log(`   this.authToken after set: ${this.authToken ? 'YES' : 'NO'}`);
+				} else {
+					console.log('❌ No auth token to set in init()');
 				}
 				
 				console.log('🔄 Starting MCP initialization sequence...');
