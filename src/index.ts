@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpAgent } from "agents/mcp";
 import { FASTAPI_BASE_URL } from "./types.js";
+import { hasToolAccess, getAllowedTools, getRoleDescription, hasResourcePermission } from "./rolePermissions.js";
 
 // Import all tools
 import {
@@ -77,8 +78,19 @@ export class MyMCP extends McpAgent {
 	}
 
 	async init() {
-		// Initialize role - don't use environment variables
-		this.role = "no_role_assigned";
+		// Try to fetch user data if auth token is available
+		if (this.authToken && this.role === "no_role_assigned") {
+			try {
+				const userData = await this.callFastAPI("/bigquery/user", "GET");
+				if (userData && userData.Role) {
+					this.role = userData.Role.toLowerCase();
+					console.log(`User role fetched from API: ${this.role} (${userData.Email})`);
+				}
+			} catch (error) {
+				console.log(`Failed to fetch user data, using default role: ${error}`);
+			}
+		}
+		
 		console.log(`MCP Server initialized with role: ${this.role}`);
 
 		// Create context object for tools, prompts, and resources
@@ -91,7 +103,7 @@ export class MyMCP extends McpAgent {
 		// Special handling for getRoleTool to pass role in the context
 		const roleContext = this;
 
-		// Register all tools
+		// Register all tools with role-based access control
 		const tools = [
 			getRoleTool,
 			getSchemaTableViewTool,
@@ -103,19 +115,40 @@ export class MyMCP extends McpAgent {
 		];
 
 		for (const tool of tools) {
-			this.server.tool(
-				tool.name,
-				tool.description as string,
-				tool.schema.shape,
-				async (params: any) => {
-					// Pass the current role in the context for getRoleTool
-					const currentContext = tool.name === 'get_role' 
-						? { ...context, role: roleContext.role }
-						: context;
-					return tool.handler(params, currentContext);
-				}
-			);
+			// Check if the current role has access to this tool
+			if (hasToolAccess(roleContext.role, tool.name)) {
+				this.server.tool(
+					tool.name,
+					tool.description as string,
+					tool.schema.shape,
+					async (params: any) => {
+						// Double-check access at execution time (in case role changed)
+						if (!hasToolAccess(roleContext.role, tool.name)) {
+							return {
+								content: [{
+									type: "text" as const,
+									text: `Access denied: Your role '${roleContext.role}' does not have permission to use the '${tool.name}' tool.`
+								}]
+							};
+						}
+						
+						// Pass the current role in the context for getRoleTool
+						const currentContext = tool.name === 'get_role' 
+							? { ...context, role: roleContext.role, authToken: roleContext.authToken }
+							: context;
+						return tool.handler(params, currentContext);
+					}
+				);
+				console.log(`Tool '${tool.name}' registered for role '${roleContext.role}'`);
+			} else {
+				console.log(`Tool '${tool.name}' not available for role '${roleContext.role}'`);
+			}
 		}
+		
+		// Log role permissions summary
+		console.log(`Role '${roleContext.role}' permissions: ${getRoleDescription(roleContext.role)}`);
+		console.log(`Allowed tools: ${getAllowedTools(roleContext.role).join(', ')}`);
+		console.log(`Authentication status: ${roleContext.authToken ? 'Authenticated' : 'Not authenticated'}`);
 
 		// Register all prompts
 		const prompts = [biAnalystPrompt];
