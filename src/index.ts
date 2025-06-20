@@ -40,6 +40,8 @@ export class MyMCP extends McpAgent {
 
 	private async callFastAPI(endpoint: string, method: string = "GET", body?: any) {
 		const url = `${FASTAPI_BASE_URL}${endpoint}`;
+		console.log(`callFastAPI: ${method} ${url}`);
+		
 		const headers: Record<string, string> = {
 			"Content-Type": "application/json",
 		};
@@ -47,6 +49,7 @@ export class MyMCP extends McpAgent {
 		// Add auth token to headers if available
 		if (this.authToken) {
 			headers["Authorization"] = `Bearer ${this.authToken}`;
+			console.log('callFastAPI: Auth token added to headers');
 		}
 
 		const options: RequestInit = {
@@ -59,7 +62,9 @@ export class MyMCP extends McpAgent {
 		}
 
 		try {
+			console.log('callFastAPI: Making fetch request...');
 			const response = await fetch(url, options);
+			console.log(`callFastAPI: Response status: ${response.status}`);
 			const data = await response.json();
 			
 			if (!response.ok) {
@@ -83,7 +88,9 @@ export class MyMCP extends McpAgent {
 		// Try to fetch user data if auth token is available
 		if (this.authToken) {
 			try {
+				console.log('Making API call to /bigquery/user...');
 				const userData = await this.callFastAPI("/bigquery/user", "GET") as UserData;
+				console.log('API response received:', JSON.stringify(userData));
 				if (userData && userData.Role) {
 					this.role = userData.Role.toLowerCase();
 					console.log(`User authenticated successfully: ${userData.Email} with role: ${this.role}`);
@@ -92,6 +99,7 @@ export class MyMCP extends McpAgent {
 				}
 			} catch (error) {
 				console.log(`Failed to fetch user data: ${error}`);
+				console.log(`Error details:`, error);
 				this.role = "no_role_assigned";
 			}
 		} else {
