@@ -106,7 +106,9 @@ Update the Claude configuration file to point to your `workers.dev` URL (ex: `wo
 
 ### Using Authentication Token (Optional)
 
-The MCP server supports optional authentication tokens that will be passed to all FastAPI backend requests. There are multiple ways to provide the auth token:
+The MCP server supports optional authentication tokens that will be passed to all FastAPI backend requests. When a valid token is provided, you can use the `get_user_data` tool to retrieve user information from the database.
+
+There are multiple ways to provide the auth token:
 
 #### Method 1: Query Parameter (Recommended for testing)
 Add the token as a query parameter to the SSE URL:

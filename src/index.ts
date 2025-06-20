@@ -9,7 +9,8 @@ import {
 	executeQueryTool,
 	uploadDashboardTool,
 	listDashboardsTool,
-	getDashboardTool
+	getDashboardTool,
+	getUserDataTool
 } from "./tools/index.js";
 
 // Import all prompts
@@ -97,7 +98,8 @@ export class MyMCP extends McpAgent {
 			executeQueryTool,
 			uploadDashboardTool,
 			listDashboardsTool,
-			getDashboardTool
+			getDashboardTool,
+			getUserDataTool
 		];
 
 		for (const tool of tools) {
