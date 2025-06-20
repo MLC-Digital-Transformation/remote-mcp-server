@@ -1,0 +1,1 @@
+export { bigqueryCatalogResource } from "./bigquery-catalog.js";
