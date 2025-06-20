@@ -11,7 +11,8 @@
       "Bash(sed:*)",
       "Bash(cp:*)",
       "Bash(mkdir:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm info:*)"
     ],
     "deny": []
   }

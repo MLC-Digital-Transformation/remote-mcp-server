@@ -78,35 +78,49 @@ export class MyMCP extends McpAgent {
 	}
 
 	async init() {
+		console.log('\n🔐 Role Assignment Process:');
+		console.log('----------------------------------------');
+		
 		// Log authentication status
 		if (!this.authToken) {
-			console.log('WARNING: No authentication token provided. Server starting without authentication.');
+			console.log('⚠️  No authentication token provided');
+			console.log('📝 Assigning default role: no_role_assigned');
+			this.role = "no_role_assigned";
 		} else {
-			console.log('Authentication token provided, fetching user data...');
-		}
-		
-		// Try to fetch user data if auth token is available
-		if (this.authToken) {
+			console.log('✅ Authentication token detected');
+			console.log('🔄 Fetching user data from database...');
+			
+			// Try to fetch user data if auth token is available
 			try {
-				console.log('Making API call to /bigquery/user...');
+				console.log(`📡 Calling API: GET ${FASTAPI_BASE_URL}/bigquery/user`);
+				const startTime = Date.now();
+				
 				const userData = await this.callFastAPI("/bigquery/user", "GET") as UserData;
-				console.log('API response received:', JSON.stringify(userData));
+				
+				const elapsed = Date.now() - startTime;
+				console.log(`⏱️  API response received in ${elapsed}ms`);
+				console.log(`📧 User Email: ${userData.Email}`);
+				console.log(`👤 User Name: ${userData.FirstName} ${userData.LastName}`);
+				console.log(`🎭 Database Role: ${userData.Role}`);
+				
 				if (userData && userData.Role) {
 					this.role = userData.Role.toLowerCase();
-					console.log(`User authenticated successfully: ${userData.Email} with role: ${this.role}`);
+					console.log(`✅ Role assigned from database: ${this.role}`);
 				} else {
-					console.log('User data fetched but no role assigned');
+					console.log('⚠️  User data fetched but no role found in database');
+					this.role = "no_role_assigned";
 				}
 			} catch (error) {
-				console.log(`Failed to fetch user data: ${error}`);
-				console.log(`Error details:`, error);
+				console.log(`❌ Failed to fetch user data from API`);
+				console.log(`📛 Error: ${error instanceof Error ? error.message : String(error)}`);
+				console.log('📝 Falling back to default role: no_role_assigned');
 				this.role = "no_role_assigned";
 			}
-		} else {
-			this.role = "no_role_assigned";
 		}
 		
-		console.log(`MCP Server initialized with role: ${this.role}`);
+		console.log('\n🎯 Role Assignment Complete:');
+		console.log(`   Final Role: ${this.role}`);
+		console.log(`   Description: ${getRoleDescription(this.role)}`);
 
 		// Create context object for tools, prompts, and resources
 		const context = {
@@ -119,6 +133,9 @@ export class MyMCP extends McpAgent {
 		const roleContext = this;
 
 		// Register all tools with role-based access control
+		console.log('\n🛠️  Tool Registration:');
+		console.log('----------------------------------------');
+		
 		const tools = [
 			getRoleTool,
 			getSchemaTableViewTool,
@@ -128,6 +145,9 @@ export class MyMCP extends McpAgent {
 			getDashboardTool,
 			getUserDataTool
 		];
+
+		let registeredCount = 0;
+		let deniedCount = 0;
 
 		for (const tool of tools) {
 			// Check if the current role has access to this tool
@@ -152,11 +172,18 @@ export class MyMCP extends McpAgent {
 						return tool.handler(params, currentContext);
 					}
 				);
-				console.log(`Tool '${tool.name}' registered for role '${roleContext.role}'`);
+				console.log(`   ✅ ${tool.name} - Registered`);
+				registeredCount++;
 			} else {
-				console.log(`Tool '${tool.name}' not available for role '${roleContext.role}'`);
+				console.log(`   ❌ ${tool.name} - Access Denied`);
+				deniedCount++;
 			}
 		}
+		
+		console.log('\n📊 Tool Registration Summary:');
+		console.log(`   Total tools: ${tools.length}`);
+		console.log(`   Registered: ${registeredCount}`);
+		console.log(`   Denied: ${deniedCount}`);
 		
 		// Log role permissions summary
 		console.log(`Role '${roleContext.role}' permissions: ${getRoleDescription(roleContext.role)}`);
@@ -192,7 +219,15 @@ export class MyMCP extends McpAgent {
 // Create a handler that extracts auth token from request and passes it to MCP agent
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+		console.log('\n========================================');
+		console.log('🚀 MCP SERVER STARTING');
+		console.log('========================================');
+		console.log(`Timestamp: ${new Date().toISOString()}`);
+		console.log(`Request URL: ${request.url}`);
+		console.log(`Request Method: ${request.method}`);
+		
 		const url = new URL(request.url);
+		console.log(`Endpoint: ${url.pathname}`);
 		
 		// Extract auth token from query parameters, headers, or environment (in order of preference)
 		const authTokenFromQuery = url.searchParams.get('auth_token');
@@ -201,24 +236,40 @@ export default {
 		
 		const authToken = authTokenFromQuery || authTokenFromHeader || authTokenFromEnv;
 		
+		console.log('\n📋 Authentication Status:');
 		if (authToken) {
-			console.log(`Auth token found (source: ${
-				authTokenFromQuery ? 'query' : authTokenFromHeader ? 'header' : authTokenFromEnv ? 'environment' : 'none'
+			console.log(`✅ Auth token found (source: ${
+				authTokenFromQuery ? 'query parameter' : authTokenFromHeader ? 'authorization header' : authTokenFromEnv ? 'environment variable' : 'none'
 			})`);
+			console.log(`   Token length: ${authToken.length} characters`);
 		} else {
-			console.log('No auth token provided');
+			console.log('❌ No auth token provided - starting in unauthenticated mode');
 		}
 		
 		// Create a custom MCP class instance with the auth token
 		class DynamicMCP extends MyMCP {
 			async init() {
+				console.log('\n📦 Initializing MCP Instance...');
+				console.log('----------------------------------------');
+				
 				// Set the auth token if available
-				this.setAuthToken(authToken);
+				if (authToken) {
+					this.setAuthToken(authToken);
+					console.log('✅ Auth token configured in MCP instance');
+				}
+				
+				console.log('🔄 Starting MCP initialization sequence...');
 				await super.init();
+				
+				console.log('\n✅ MCP INITIALIZATION COMPLETE');
+				console.log(`📌 Final role: ${this.role}`);
+				console.log(`🔧 Tools available: ${getAllowedTools(this.role).length}`);
+				console.log('========================================\n');
 			}
 		}
 		
 		// Mount the dynamic MCP agent
+		console.log('\n🔌 Mounting MCP handler on /sse endpoint...');
 		const mcpHandler = DynamicMCP.mount("/sse");
 		return mcpHandler.fetch(request, env, ctx);
 	}
