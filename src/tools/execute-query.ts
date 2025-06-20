@@ -5,7 +5,7 @@ export const executeQueryTool = {
     name: "execute_query",
     description: "Execute a SELECT query against BigQuery and return the results. Use this when you need to query data from BigQuery tables or views. Make sure to use get_schema_table_view() to check how to construct the query.",
     schema: z.object({
-        query: z.string().describe("BigQuery SQL query to execute. IMPORTANT: Only SELECT queries are allowed - no INSERT, UPDATE, DELETE, CREATE, or DDL statements. CTEs (WITH clauses) are allowed but the final statement must be a SELECT. The query validation checks if the trimmed query starts with 'SELECT' (case-insensitive), so ensure your query begins with SELECT even when using CTEs."),
+        query: z.string().describe("BigQuery SQL query to execute. IMPORTANT: Only SELECT queries are allowed - no INSERT, UPDATE, DELETE, CREATE, or DDL statements. CTEs (WITH clauses) are allowed but the final statement must be a SELECT. The query validation checks if the trimmed query starts with either 'SELECT' or 'WITH' (case-insensitive)."),
         limit: z.number().optional().default(100).describe("Maximum number of rows to return (1-1000)")
     }),
     handler: async ({ query, limit }: any, context: ToolContext) => {
