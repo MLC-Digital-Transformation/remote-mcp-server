@@ -1275,6 +1275,9 @@ function addRefreshButton() {
 
 **IMPORTANT**: The FastAPI BigQuery endpoint returns data with NAMED PROPERTIES, not arrays!
 
+⚠️ **COMMON ERROR**: "Cannot read properties of undefined" when using row[0], row[1], etc.
+This happens because the API returns objects with named properties, NOT arrays!
+
 API Response Format:
 \`\`\`javascript
 {
@@ -1307,14 +1310,22 @@ const count = row.product_count;
 When processing BigQuery results, ALWAYS validate data before using string methods or accessing properties:
 
 \`\`\`javascript
-// WRONG - Will fail if row[0] is null/undefined
+// WRONG - Will fail because row[0] is undefined (API returns objects, not arrays!)
 backgroundColor: data.rows.map(row => {
-    if (row[0].includes('text')) return color; // ERROR if row[0] is null!
+    if (row[0].includes('text')) return color; // ERROR: Cannot read properties of undefined
 })
 
-// CORRECT - Always check for null/undefined first
+// ALSO WRONG - Even with null check, row[0] doesn't exist!
 backgroundColor: data.rows.map(row => {
-    const value = row[0];
+    const value = row[0]; // This is undefined - API returns objects!
+    if (!value || value === null) return chartColors.gray;
+    if (typeof value === 'string' && value.includes('text')) return color;
+    return chartColors.gray;
+})
+
+// CORRECT - Use property names from your SQL query
+backgroundColor: data.rows.map(row => {
+    const value = row.column_name; // Use actual column name!
     if (!value || value === null) return chartColors.gray;
     if (typeof value === 'string' && value.includes('text')) return color;
     return chartColors.gray;

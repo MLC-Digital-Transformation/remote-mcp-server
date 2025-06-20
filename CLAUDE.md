@@ -168,8 +168,39 @@ The current implementation provides these tools and resources:
 
 1. **get_role** - Display current MCP server role (for testing role configuration)
    - Parameters: None
-2. **get_schema** - Get BigQuery dataset/table schema information
-   - Parameters: `dataset_id` (optional string), `table_name` (optional string)
+2. **get_schema_table_view** - Get BigQuery dataset/table schema information
+   - Parameters: `dataset_with_table` (string in format 'dataset.table'), `include_description` (optional boolean)
+3. **execute_query** - Execute BigQuery SELECT queries
+   - Parameters: `query` (string), `limit` (optional number 1-1000)
+   
+   **CRITICAL: API Response Format**
+   The execute_query tool returns data with NAMED PROPERTIES, NOT arrays!
+   
+   ```json
+   {
+     "rows": [
+       {
+         "column_name1": "value1",
+         "column_name2": "value2",
+         "column_name3": 123
+       }
+     ],
+     "columns": [
+       {"name": "column_name1", "type": "String"},
+       {"name": "column_name2", "type": "String"},
+       {"name": "column_name3", "type": "Int64"}
+     ]
+   }
+   ```
+   
+   **Wrong**: `row[0]` (undefined!)
+   **Correct**: `row.column_name` or `row.product_count`
+4. **upload_dashboard** - Upload HTML dashboard to Google Cloud Storage
+   - Parameters: `html_content` (string), `filename` (string), `directory` (optional string)
+5. **list_dashboards** - List existing dashboard names
+   - Parameters: `directory` (optional string)
+6. **get_dashboard** - Get dashboard content and URL by name
+   - Parameters: `dashboard_name` (string), `directory` (optional string)
 
 ### Available Resources
 
