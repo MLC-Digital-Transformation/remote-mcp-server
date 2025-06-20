@@ -248,21 +248,25 @@ export default {
 			console.log('❌ No auth token provided - starting in unauthenticated mode');
 		}
 		
+		// Store auth token in a way that persists
+		console.log(`🔑 Storing auth token for MCP use: ${authToken ? 'YES' : 'NO'}`);
+		
 		// Create a custom MCP class instance with the auth token
 		class DynamicMCP extends MyMCP {
+			// Override the property to capture the token
+			protected authToken = authToken;
+			
 			async init() {
 				console.log('\n📦 Initializing MCP Instance...');
 				console.log('----------------------------------------');
-				console.log(`   Auth token in closure: ${authToken ? 'YES' : 'NO'}`);
-				console.log(`   this.authToken before set: ${this.authToken ? 'YES' : 'NO'}`);
+				console.log(`   Auth token from closure: ${authToken ? 'YES' : 'NO'}`);
+				console.log(`   this.authToken (property): ${this.authToken ? 'YES' : 'NO'}`);
 				
-				// Set the auth token if available
-				if (authToken) {
-					this.setAuthToken(authToken);
-					console.log('✅ Auth token configured in MCP instance');
-					console.log(`   this.authToken after set: ${this.authToken ? 'YES' : 'NO'}`);
+				// The token should already be set via property initialization
+				if (this.authToken) {
+					console.log(`✅ Auth token already set via property (length: ${this.authToken.length})`);
 				} else {
-					console.log('❌ No auth token to set in init()');
+					console.log('❌ No auth token available in init()');
 				}
 				
 				console.log('🔄 Starting MCP initialization sequence...');
