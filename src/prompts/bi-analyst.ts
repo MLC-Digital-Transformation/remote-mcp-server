@@ -102,11 +102,8 @@ When users want to edit an existing dashboard:
    - The MLC-direct Design System
    - Existing functionality that should remain
    - Dynamic data fetching patterns
-7. Ask the user: "Would you like to keep the dashboard in the same category or move it to a different one?"
-   - If same category, use the existing category from the dashboard's directory path
-   - If different, ask for the new category name
-8. Upload the dashboard using upload_dashboard() with the appropriate category in the directory path. Dont show the user the HTML code again, since BigQuery queries and data fetching are now dynamic and not working unless in the Dashboard Hub.
-9. Provide the URL and confirm the changes
+7. Upload the dashboard using upload_dashboard() with the appropriate category in the directory path. Dont show the user the HTML code again, since BigQuery queries and data fetching are now dynamic and not working unless in the Dashboard Hub.
+8. Provide the URL and confirm the changes
 
 **MLC-direct Design System:**
 Apply this consistent design system to all dashboards:
@@ -574,11 +571,11 @@ async function initializeDashboard() {
             fetchBigQueryData("SELECT DATE_TRUNC(order_date, MONTH) as month, SUM(revenue) as revenue FROM sales.transactions WHERE order_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH) GROUP BY month ORDER BY month")
         ]);
         
-        // Update Sales Chart
-        salesChart.data.labels = salesData.rows.map(row => row[0]);
+        // Update Sales Chart - use property names from SQL query
+        salesChart.data.labels = salesData.rows.map(row => row.product_name); // Use column name
         salesChart.data.datasets[0] = {
             label: 'Revenue by Product',
-            data: salesData.rows.map(row => row[1]),
+            data: salesData.rows.map(row => row.total), // Use column alias 'total'
             backgroundColor: '#4ECDC4',
             borderColor: '#6B46C1',
             borderWidth: 2
@@ -591,12 +588,12 @@ async function initializeDashboard() {
         };
         salesChart.update();
         
-        // Update Trends Chart (as line chart)
+        // Update Trends Chart (as line chart) - use property names from SQL query
         trendsChart.config.type = 'line';
-        trendsChart.data.labels = trendsData.rows.map(row => new Date(row[0]).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+        trendsChart.data.labels = trendsData.rows.map(row => new Date(row.month).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })); // Use column alias 'month'
         trendsChart.data.datasets[0] = {
             label: 'Monthly Revenue Trend',
-            data: trendsData.rows.map(row => row[1]),
+            data: trendsData.rows.map(row => row.revenue), // Use column alias 'revenue'
             borderColor: '#6B46C1',
             backgroundColor: 'rgba(107, 70, 193, 0.1)',
             tension: 0.1

@@ -221,6 +221,7 @@ new Chart(ctx, {
 ### Data Transformation from API with NULL Handling
 \`\`\`javascript
 // Transform BigQuery results for Chart.js - ALWAYS handle NULL values!
+// IMPORTANT: The API returns objects with named properties, NOT arrays!
 const transformData = (queryResults) => {
     // Validate data first
     if (!queryResults || !queryResults.rows || queryResults.rows.length === 0) {
@@ -231,22 +232,23 @@ const transformData = (queryResults) => {
     }
     
     // Map data safely with NULL checks and fallbacks
+    // Example: Assuming query returns columns 'category_name' and 'total_value'
     return {
         labels: queryResults.rows.map(row => {
-            // Handle NULL or missing values
-            if (!row || row[0] === null || row[0] === undefined) {
+            // Handle NULL or missing values - use property names!
+            if (!row || row.category_name === null || row.category_name === undefined) {
                 return 'Unknown';
             }
-            return String(row[0]);
+            return String(row.category_name);
         }),
         datasets: [{
             label: 'Values',
             data: queryResults.rows.map(row => {
-                // Ensure numeric values
-                if (!row || row[1] === null || row[1] === undefined) {
+                // Ensure numeric values - use property names!
+                if (!row || row.total_value === null || row.total_value === undefined) {
                     return 0;
                 }
-                return Number(row[1]) || 0;
+                return Number(row.total_value) || 0;
             }),
             backgroundColor: chartColors.primary
         }]
@@ -254,8 +256,9 @@ const transformData = (queryResults) => {
 };
 
 // IMPORTANT: When using string methods, ALWAYS check for null first!
+// Example: Assuming a 'vendor_name' column
 backgroundColor: queryResults.rows.map(row => {
-    const value = row[0];
+    const value = row.vendor_name; // Use property name!
     // Guard against null/undefined
     if (!value || value === null) return chartColors.gray;
     
@@ -337,8 +340,14 @@ function initializeChart(chartId, embeddedData) {
     }
     
     // Transform embedded data for Chart.js
-    const labels = embeddedData.rows.map(row => row[0]);
-    const values = embeddedData.rows.map(row => row[1]);
+    // IMPORTANT: Use property names based on your SQL query columns!
+    // This example assumes your query returns columns that can be accessed by property name
+    // You'll need to adjust these based on your actual column names
+    const firstColumn = Object.keys(embeddedData.rows[0])[0]; // Get first column name
+    const secondColumn = Object.keys(embeddedData.rows[0])[1]; // Get second column name
+    
+    const labels = embeddedData.rows.map(row => row[firstColumn]);
+    const values = embeddedData.rows.map(row => row[secondColumn]);
     
     // Create chart with data
     return new Chart(ctx, {
