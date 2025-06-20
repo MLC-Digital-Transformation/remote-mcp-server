@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpAgent } from "agents/mcp";
-import { FASTAPI_BASE_URL } from "./types.js";
+import { FASTAPI_BASE_URL, UserData } from "./types.js";
 import { hasToolAccess, getAllowedTools, getRoleDescription, hasResourcePermission } from "./rolePermissions.js";
 
 // Import all tools
@@ -81,7 +81,7 @@ export class MyMCP extends McpAgent {
 		// Try to fetch user data if auth token is available
 		if (this.authToken && this.role === "no_role_assigned") {
 			try {
-				const userData = await this.callFastAPI("/bigquery/user", "GET");
+				const userData = await this.callFastAPI("/bigquery/user", "GET") as UserData;
 				if (userData && userData.Role) {
 					this.role = userData.Role.toLowerCase();
 					console.log(`User role fetched from API: ${this.role} (${userData.Email})`);
