@@ -5,21 +5,13 @@ export const getSchemaTableViewTool = {
     name: "get_schema_table_view",
     description: "Get schema information for a specific BigQuery table or view including column names, types, and descriptions",
     schema: z.object({
-        dataset_with_table: z.string().describe("Dataset and table/view name in format 'dataset.table' (e.g., 'products.Produkt')"),
-        include_description: z.boolean().optional().default(true).describe("Include column descriptions in the schema")
+        dataset_with_table: z.string().describe("Dataset and table/view name in format 'dataset.table' (e.g., 'products.Produkt')")
     }),
-    handler: async ({ dataset_with_table, include_description }: any, context: ToolContext) => {
+    handler: async ({ dataset_with_table }: any, context: ToolContext) => {
         try {
-            const endpoint = `/bigquery/schema/${dataset_with_table}`;
-            const params = new URLSearchParams();
+            const endpoint = `/bigquery/schema/${dataset_with_table}?include_description=true`;
             
-            if (include_description !== undefined) {
-                params.append("include_description", include_description.toString());
-            }
-            
-            const fullEndpoint = params.toString() ? `${endpoint}?${params.toString()}` : endpoint;
-            
-            const result = await context.callFastAPI(fullEndpoint);
+            const result = await context.callFastAPI(endpoint);
             return {
                 content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
             };
