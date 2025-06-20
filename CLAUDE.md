@@ -6,6 +6,60 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a simplified Remote MCP (Model Context Protocol) Server deployed on Cloudflare Workers that acts as a proxy to a FastAPI backend application. It enables Claude Desktop and other MCP clients to connect to FastAPI endpoints through the MCP protocol over HTTP/SSE without authentication.
 
+## Project Structure
+
+```
+remote-mcp-server/
+├── src/
+│   ├── index.ts              # Main entry point, MCP server initialization
+│   ├── types.ts              # Shared TypeScript interfaces and types
+│   ├── tools/                # MCP Tools (functions Claude can call)
+│   │   ├── index.ts          # Tool exports
+│   │   ├── get-role.ts       # Get current server role
+│   │   ├── get-schema-table-view.ts  # BigQuery schema information
+│   │   ├── execute-query.ts  # Execute BigQuery SELECT queries
+│   │   ├── upload-dashboard.ts       # Upload HTML dashboards to GCS
+│   │   ├── list-dashboards.ts        # List existing dashboards
+│   │   └── get-dashboard.ts          # Retrieve dashboard content
+│   ├── prompts/              # MCP Prompts (context for Claude)
+│   │   ├── index.ts          # Prompt exports
+│   │   ├── bi-analyst.ts     # BI Analyst & Dashboard Builder prompt
+│   │   └── chartjs-docs.ts   # Chart.js documentation reference
+│   └── resources/            # MCP Resources (data access)
+│       ├── index.ts          # Resource exports
+│       └── bigquery-catalog.ts  # BigQuery datasets/tables catalog
+├── static/                   # Static assets
+├── wrangler.jsonc           # Cloudflare Workers configuration
+├── package.json             # Node.js dependencies
+└── tsconfig.json            # TypeScript configuration
+```
+
+### Code Organization
+
+**Tools (`src/tools/`)**: Each tool is a separate file that exports a tool object with:
+- `name`: Tool identifier
+- `description`: Human-readable description
+- `schema`: Zod schema for input validation
+- `handler`: Async function that processes the input and returns results
+
+**Prompts (`src/prompts/`)**: Each prompt exports a prompt object with:
+- `name`: Prompt identifier
+- `description`: Human-readable description
+- `schema`: Zod schema for arguments
+- `handler`: Async function that returns messages array
+
+**Resources (`src/resources/`)**: Each resource exports a resource object with:
+- `name`: Resource identifier
+- `uri`: Resource URI pattern
+- `metadata`: Object with mimeType and description
+- `handler`: Async function that fetches and returns resource data
+
+**Main Server (`src/index.ts`)**: 
+- Imports all tools, prompts, and resources
+- Registers them with the MCP server
+- Handles role configuration
+- Provides the `callFastAPI` helper method
+
 ## Key Features
 
 - **No Authentication Required** - Direct connection without OAuth prompts
@@ -77,88 +131,171 @@ The MCP server supports dynamic role configuration through multiple methods (in 
 
 Tools are functions that Claude can call. To add a new tool:
 
-1. **Define the tool in `src/index.ts`** inside the `init()` method:
+1. **Create a new file in `src/tools/`** (e.g., `multiply.ts`):
 
 ```typescript
-// Example: Add a multiply tool
-this.server.tool("multiply", { a: z.number(), b: z.number() }, async ({ a, b }) => ({
-  content: [{ type: "text", text: `${a} × ${b} = ${a * b}` }],
-}));
+import { z } from "zod";
+import { ToolContext } from "../types.js";
+
+export const multiplyTool = {
+    name: "multiply",
+    description: "Multiply two numbers together",
+    schema: z.object({
+        a: z.number().describe("First number"),
+        b: z.number().describe("Second number")
+    }),
+    handler: async ({ a, b }: any, context: ToolContext) => {
+        return {
+            content: [{ type: "text" as const, text: `${a} × ${b} = ${a * b}` }],
+        };
+    }
+};
 ```
 
-2. **Tool Structure**:
-   - First parameter: Tool name (string)
-   - Second parameter: Input schema object using Zod
-   - Third parameter: Handler function that processes the input and returns results
+2. **Export it from `src/tools/index.ts`**:
 
-3. **Return Format**:
-   - Always return an object with a `content` array
-   - Content items must have a `type` (usually "text")
-   - Include the actual result in the `text` field
+```typescript
+export { multiplyTool } from "./multiply.js";
+```
+
+3. **Add it to the tools array in `src/index.ts`**:
+
+```typescript
+const tools = [
+    getRoleTool,
+    // ... other tools
+    multiplyTool  // Add your new tool here
+];
+```
 
 ### Adding New Prompts
 
-Prompts provide context and instructions to Claude. To add prompts:
+Prompts provide context and instructions to Claude. To add a new prompt:
 
-1. **Define prompts in `src/index.ts`** inside the `init()` method:
+1. **Create a new file in `src/prompts/`** (e.g., `math-tutor.ts`):
 
 ```typescript
-// Example: Add a math tutor prompt
-this.server.prompt("math_tutor", "Act as a helpful math tutor", {
-  difficulty: z.string().optional()
-}, async ({ difficulty = "medium" }) => ({
-  messages: [{
-    role: 'user',
-    content: {
-      type: 'text',
-      text: `You are a patient and encouraging math tutor. Adjust your explanations to ${difficulty} difficulty level. Break down problems step-by-step and use visual analogies when helpful.`,
-    },
-  }],
-}));
+import { z } from "zod";
+import { PromptContext } from "../types.js";
+
+export const mathTutorPrompt = {
+    name: "Math Tutor",
+    description: "Act as a helpful math tutor",
+    schema: z.object({
+        difficulty: z.string().optional().default("medium").describe("Difficulty level")
+    }),
+    handler: async ({ difficulty }: any, context: PromptContext) => {
+        return {
+            messages: [{
+                role: 'user' as const,
+                content: {
+                    type: 'text' as const,
+                    text: `You are a patient and encouraging math tutor. Adjust your explanations to ${difficulty} difficulty level. Break down problems step-by-step and use visual analogies when helpful.`,
+                },
+            }],
+        };
+    }
+};
 ```
 
-2. **Prompt Structure**:
-   - First parameter: Prompt name (string)
-   - Second parameter: Description (string)
-   - Third parameter: Arguments schema object using Zod
-   - Fourth parameter: Handler function that returns messages array
-   - Return format: `{ messages: [{ role: 'user', content: { type: 'text', text } }] }`
+2. **Export it from `src/prompts/index.ts`**:
+
+```typescript
+export { mathTutorPrompt } from "./math-tutor.js";
+```
+
+3. **Add it to the prompts array in `src/index.ts`**:
+
+```typescript
+const prompts = [biAnalystPrompt, mathTutorPrompt];
+```
 
 ### Adding New Resources
 
-Resources provide access to external data or APIs. To add resources:
+Resources provide access to external data or APIs. To add a new resource:
 
-1. **Define resources in `src/index.ts`** inside the `init()` method:
+1. **Create a new file in `src/resources/`** (e.g., `weather.ts`):
 
 ```typescript
-// Example: Add a weather resource
-this.server.resource("current_weather", "weather://current", {
-  mimeType: "application/json",
-  description: "Get current weather for a city"
-}, async () => {
-  // In real implementation, you'd call a weather API
-  const mockWeather = {
-    temperature: 22,
-    condition: "Partly cloudy",
-    humidity: 65,
-  };
-  
-  return {
-    contents: [{
-      uri: "weather://current",
-      mimeType: "application/json",
-      text: JSON.stringify(mockWeather, null, 2),
-    }],
-  };
-});
+import { ResourceContext } from "../types.js";
+
+export const weatherResource = {
+    name: "current_weather",
+    uri: "weather://current",
+    metadata: {
+        mimeType: "application/json",
+        description: "Get current weather for a city"
+    },
+    handler: async (context: ResourceContext) => {
+        try {
+            // Example: Call a weather API
+            const result = await context.callFastAPI("/weather/current");
+            
+            return {
+                contents: [{
+                    uri: "weather://current",
+                    mimeType: "application/json",
+                    text: JSON.stringify(result, null, 2),
+                }],
+            };
+        } catch (error) {
+            return {
+                contents: [{
+                    uri: "weather://current",
+                    mimeType: "application/json",
+                    text: JSON.stringify({
+                        error: "Could not fetch weather",
+                        message: error instanceof Error ? error.message : String(error)
+                    }, null, 2),
+                }],
+            };
+        }
+    }
+};
 ```
 
-2. **Resource Structure**:
-   - First parameter: Resource name (string)
-   - Second parameter: URI pattern (string) 
-   - Third parameter: Metadata object with mimeType and description
-   - Fourth parameter: Handler function that fetches and returns the resource data
-   - Return format: `{ contents: [{ uri, mimeType, text }] }`
+2. **Export it from `src/resources/index.ts`**:
+
+```typescript
+export { weatherResource } from "./weather.js";
+```
+
+3. **Add it to the resources array in `src/index.ts`**:
+
+```typescript
+const resources = [bigqueryCatalogResource, weatherResource];
+```
+
+### Best Practices
+
+1. **Tool Naming**: Use descriptive, action-oriented names (e.g., `calculate_tax`, `fetch_user_data`)
+
+2. **Input Validation**: Always use Zod schemas to validate inputs with clear descriptions
+
+3. **Error Handling**: Wrap handlers in try-catch blocks for production:
+   ```typescript
+   handler: async (input, context) => {
+     try {
+       // Your logic here
+     } catch (error) {
+       return {
+         content: [{
+           type: "text" as const,
+           text: `Error: ${error.message}`,
+         }],
+       };
+     }
+   }
+   ```
+
+4. **Type Safety**: Always use `as const` for literal types in return values
+
+5. **Resource URIs**: Follow a consistent pattern:
+   - `config://` for configuration
+   - `data://` for data resources
+   - `api://` for external API wrappers
+
+6. **Prompt Design**: Make prompts specific and actionable, with clear instructions
 
 ## Current FastAPI Proxy Implementation
 
