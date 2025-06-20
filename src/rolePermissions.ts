@@ -18,7 +18,7 @@ export interface RolePermissions {
 // Define role permissions
 export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     // Full admin access
-    guest: {
+    admin: {
         tools: [
             'get_role',
             'get_user_data',
@@ -80,7 +80,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     },
 
     // Guest/unauthenticated role - minimal access
-    admin: {
+    guest: {
         tools: [
             'get_role'
         ],
@@ -94,13 +94,19 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     // Default role when no role is assigned
     no_role_assigned: {
         tools: [
-            'get_role'
+            'get_role',
+            'get_user_data',
+            'get_schema_table_view',
+            'execute_query',
+            'upload_dashboard',
+            'list_dashboards',
+            'get_dashboard'
         ],
-        resources: [],
+        resources: ['bigquery_catalog'],
         schemas: {
-            denied: ['*']
+            // Admin has access to all schemas
         }
-    }
+    },
 };
 
 // Helper functions for permission checking
