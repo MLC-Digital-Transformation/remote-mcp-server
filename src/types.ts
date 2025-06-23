@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const FASTAPI_BASE_URL = "https://fast-api-165560968031.europe-west3.run.app";
+export const FASTAPI_BASE_URL = "https://ai.mlcd-dashboard-hub.de";
 
 export interface UserData {
     FirstName: string;

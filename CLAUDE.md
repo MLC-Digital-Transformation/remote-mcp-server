@@ -69,7 +69,7 @@ remote-mcp-server/
 
 ## FastAPI Integration
 
-**Base URL**: `https://fast-api-165560968031.europe-west3.run.app`
+**Base URL**: `https://ai.mlcd-dashboard-hub.de`
 
 The MCP server provides the following proxy capabilities:
 - Health checks to monitor FastAPI server status
@@ -338,7 +338,7 @@ The current implementation provides these tools and resources:
 ### FastAPI Proxy Helper
 
 ```typescript
-const FASTAPI_BASE_URL = "https://fast-api-165560968031.europe-west3.run.app";
+const FASTAPI_BASE_URL = "https://ai.mlcd-dashboard-hub.de";
 
 private async callFastAPI(endpoint: string, method: string = "GET", body?: any) {
   const url = `${FASTAPI_BASE_URL}${endpoint}`;

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { ROLE_PERMISSIONS, getRoleDescription, getAllowedTools } from "./rolePermissions.js";
 
-const FASTAPI_BASE_URL = "https://fast-api-165560968031.europe-west3.run.app";
+const FASTAPI_BASE_URL = "https://ai.mlcd-dashboard-hub.de";
 
 const app = new Hono();
 

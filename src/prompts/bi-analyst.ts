@@ -458,7 +458,7 @@ For dashboards that fetch current BigQuery data dynamically:
 // Example: Fetch data from FastAPI BigQuery endpoint
 async function fetchBigQueryData(query) {
     try {
-        const response = await fetch('https://fast-api-165560968031.europe-west3.run.app/bigquery/execute_query', {
+        const response = await fetch('https://ai.mlcd-dashboard-hub.de/bigquery/execute_query', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
